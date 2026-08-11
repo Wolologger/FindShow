@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FindShow — tus artistas, tus conciertos</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0D10">
+<meta name="description" content="Cruza tus artistas seguidos en Spotify con conciertos reales en España, filtrados por distancia. Conciertos pasados con setlist incluido.">
+
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FindShow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav class="page-nav">
+    <a href="demo.html" class="page-nav-link">Demo</a>
+    <a href="index.html" class="page-nav-link active">App real</a>
+  </nav>
+
+  <header class="masthead">
+    <div>
+      <div class="title">FindShow<span>.</span></div>
+      <div class="sub">artistas seguidos · conciertos en españa · minutos escuchados</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="conciertos">Conciertos</button>
+    <button class="tab-btn" data-tab="stats">Minutos escuchados</button>
+  </div>
+
+  <!-- ===================== TAB CONCIERTOS ===================== -->
+  <div class="panel active" id="panel-conciertos">
+
+    <details class="config">
+      <summary>&gt; configuración (client id, redirect uri, api key)</summary>
+      <div class="config-grid">
+        <div class="field">
+          <label>Spotify Client ID</label>
+          <input type="text" id="spotifyClientId" placeholder="pega aquí tu Client ID de developer.spotify.com/dashboard">
+        </div>
+        <div class="field">
+          <label>Redirect URI (debe coincidir EXACTO con la registrada en tu app)</label>
+          <input type="text" id="spotifyRedirectUri">
+        </div>
+        <div class="field">
+          <label>Ticketmaster API Key</label>
+          <input type="text" id="tmApiKey" placeholder="pega aquí tu apikey de developer.ticketmaster.com">
+        </div>
+        <div class="field">
+          <label>Radio desde Santander, Cantabria (km)</label>
+          <input type="number" id="radioKm" value="150" min="10" max="1000" step="10">
+        </div>
+        <div class="field">
+          <label>setlist.fm API Key (para conciertos pasados)</label>
+          <input type="text" id="setlistApiKey" placeholder="pega aquí tu apikey de api.setlist.fm">
+        </div>
+        <div class="field">
+          <label>Proxy CORS (opcional, solo si setlist.fm da error de CORS — ver README)</label>
+          <input type="text" id="corsProxyUrl" placeholder="p.ej. https://tu-proxy.azurewebsites.net/api/proxy?url=">
+        </div>
+      </div>
+      <div class="hint">
+        Nada de esto se guarda en ningún servidor: vive solo en esta sesión del navegador.
+        Necesitas: 1) crear una app en <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a>
+        con esta misma URL exacta como Redirect URI y el scope <code>user-follow-read</code> activado,
+        y 2) una key gratuita en <a href="https://developer.ticketmaster.com" target="_blank">developer.ticketmaster.com</a>.
+        Para conciertos pasados hace falta además una key gratuita de
+        <a href="https://api.setlist.fm/docs/1.0/index.html" target="_blank">api.setlist.fm</a> —
+        <strong>ojo, esta API no admite peticiones directas desde el navegador (CORS)</strong>,
+        mira la sección correspondiente del README para las opciones.
+      </div>
+    </details>
+
+    <button class="btn" id="btnSpotifyLogin">Conectar con Spotify</button>
+    <button class="btn secondary" id="btnBuscarConciertos" style="display:none;margin-left:10px;">Buscar conciertos en España</button>
+
+    <div class="status-line" id="statusConciertos"></div>
+    <div class="progress-bar" id="progressBar"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+    <div class="artist-list" id="artistList"></div>
+
+    <div class="past-toggle-row">
+      <button class="btn secondary" id="btnTogglePasados">Ver conciertos pasados</button>
+      <select id="filtroAnio" class="select-control" style="display:none;">
+        <option value="">Todos los años</option>
+      </select>
+    </div>
+
+    <div class="cors-note" id="corsNote" style="display:none;">
+      setlist.fm no permite peticiones directas desde el navegador (CORS). Necesitas un proxy propio
+      (mira "Conciertos pasados" en el <a href="README.md">README</a> para un ejemplo con Azure Functions)
+      o pegar la URL de uno en el panel de configuración de arriba.
+    </div>
+
+    <div class="controls-row" id="controlsRow">
+      <input type="text" id="buscarArtista" class="search-input" placeholder="Buscar por artista...">
+      <select id="ordenarPor" class="select-control">
+        <option value="fecha">Ordenar: Fecha</option>
+        <option value="artista">Ordenar: Artista</option>
+        <option value="distancia">Ordenar: Distancia</option>
+      </select>
+      <select id="agruparPor" class="select-control">
+        <option value="ninguno">Sin agrupar</option>
+        <option value="artista">Agrupar: Artista</option>
+        <option value="mes">Agrupar: Mes</option>
+      </select>
+      <div class="view-toggle" id="viewToggleRow">
+        <button class="view-btn active" data-view="list">Lista</button>
+        <button class="view-btn" data-view="calendar">Calendario</button>
+      </div>
+    </div>
+
+    <div class="tickets" id="ticketResults"></div>
+  </div>
+
+  <!-- ===================== TAB STATS ===================== -->
+  <div class="panel" id="panel-stats">
+
+    <div class="callout">
+      <strong>Por qué esto es un archivo y no una llamada a la API:</strong>
+      Spotify no expone tus minutos escuchados por ningún endpoint público. La única vía real es pedir tu
+      <strong>Historial de streaming extendido</strong> desde
+      <a href="https://www.spotify.com/es/account/privacy/" target="_blank">spotify.com/account/privacy</a>
+      (tarda hasta 30 días). Te llega un .zip con varios .json — súbelos aquí abajo y se calcula todo en tu navegador,
+      sin subir nada a ningún sitio.
+    </div>
+
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" multiple accept=".json">
+      <label class="upload-label" for="fileInput">&gt; seleccionar archivos .json del historial extendido</label>
+    </div>
+    <div class="status-line" id="statusStats"></div>
+
+    <div id="statsResults"></div>
+  </div>
+
+  <footer class="app-footer">
+    <p>
+      Datos de conciertos proporcionados por la
+      <a href="https://developer.ticketmaster.com" target="_blank" rel="noopener">Ticketmaster Discovery API</a>.
+      Datos de artistas seguidos obtenidos vía la
+      <a href="https://developer.spotify.com/documentation/web-api" target="_blank" rel="noopener">Spotify Web API</a>.
+      Esta aplicación es un proyecto personal, no comercial, y no está afiliada, patrocinada ni respaldada
+      por Ticketmaster/Live Nation ni por Spotify.
+    </p>
+    <p>
+      Privacidad: esta app no tiene servidor. Todo el procesamiento ocurre en tu navegador.
+      Las claves de API y el token de acceso viven solo en tu sesión (no se envían a terceros
+      salvo a Spotify/Ticketmaster para hacer las consultas correspondientes) y no se almacenan
+      ni transmiten a ningún servidor propio. No se usan cookies de seguimiento ni analítica.
+    </p>
+  </footer>
+
+</div>
+
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js').catch(function() {
+        // si falla (p.ej. abierto en file://), la app sigue funcionando igual, solo sin caché offline
+      });
+    });
+  }
+</script>
+</body>
+</html>

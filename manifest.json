@@ -1,0 +1,58 @@
+{
+  "name": "FindShow — conciertos y setlists",
+  "short_name": "FindShow",
+  "description": "Cruza tus artistas seguidos en Spotify con conciertos reales en España, filtrados por distancia. Incluye conciertos pasados con setlist y minutos escuchados.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0D10",
+  "theme_color": "#0B0D10",
+  "lang": "es-ES",
+  "dir": "ltr",
+  "categories": ["music", "entertainment", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-48.png", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/mobile-conciertos.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Próximos conciertos filtrados por distancia"
+    },
+    {
+      "src": "screenshots/mobile-setlist.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Conciertos pasados con setlist completo"
+    },
+    {
+      "src": "screenshots/desktop-conciertos.png",
+      "sizes": "1920x1200",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vista de escritorio"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Conciertos pasados",
+      "short_name": "Pasados",
+      "description": "Ver el historial de conciertos con setlist",
+      "url": "./index.html?vista=pasados"
+    }
+  ]
+}
