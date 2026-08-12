@@ -12,6 +12,37 @@
 // Demo con datos de prueba (sin llamadas reales a APIs)
 // ============================================================
 
+// ============================================================
+// TUTORIAL — modal "¿Cómo funciona?"
+// ============================================================
+var btnTutorial = document.getElementById('btnTutorial');
+if (btnTutorial) {
+  btnTutorial.addEventListener('click', function() {
+    var html =
+      '<div class="modal-header">' +
+        '<span class="modal-artist">Guía rápida</span>' +
+        '<span class="modal-title">Cómo funciona FindShow</span>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<ol class="tutorial-steps">' +
+          '<li><strong>Esto es la demo</strong>' +
+            'Los 6 artistas y los conciertos de aquí son datos inventados, para que veas el diseño sin necesitar credenciales.</li>' +
+          '<li><strong>Chips de artista</strong>' +
+            'Clic en un chip para filtrar los resultados a ese artista.</li>' +
+          '<li><strong>Radio de distancia</strong>' +
+            'El slider filtra los conciertos por km desde Cantabria.</li>' +
+          '<li><strong>Conciertos pasados</strong>' +
+            'Pulsa "Ver conciertos pasados" para el historial con setlist de ejemplo, filtrable por año.</li>' +
+          '<li><strong>Ordenar, agrupar, calendario</strong>' +
+            'Prueba los desplegables y el toggle Lista/Calendario.</li>' +
+          '<li><strong>Para buscar conciertos reales</strong>' +
+            'Ve a la pestaña "App real" arriba — ahí funciona con datos de Ticketmaster de verdad.</li>' +
+        '</ol>' +
+      '</div>';
+    openModal(html);
+  });
+}
+
 // ---- Datos de prueba: artistas seguidos ----
 var artistasSeguidos = ['Sôber', 'Boikot', 'Reincidentes', 'Ska-P', 'Extremoduro', 'Def Con Dos'];
 var artistasSeleccionados = new Set();

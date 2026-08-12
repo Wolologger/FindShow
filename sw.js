@@ -1,8 +1,10 @@
 // ============================================================
 // FindShow — service worker mínimo
-// v1.5.0 — 12/08/26
+// v1.6.0 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
+// v1.6.0 (12/08/26) — Bump de caché: banner de "nueva versión" con botón
+//                      manual (antes recargaba sola) + modal de tutorial
 // v1.5.0 (12/08/26) — Corregido bug real: cache.put(response.clone()) podía
 //                      lanzar "Response body is already used" y dejaba la
 //                      caché desactualizada para siempre. Cambiado a
@@ -21,7 +23,7 @@
 // versiones viejas cacheadas indefinidamente.
 // ============================================================
 
-var CACHE_NAME = 'findshow-shell-v1.5.0';
+var CACHE_NAME = 'findshow-shell-v1.6.0';
 
 var APP_SHELL = [
   './',

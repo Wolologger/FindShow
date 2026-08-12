@@ -231,6 +231,17 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
 
+### v1.6.0
+- Botón "¿Cómo funciona?" en la nav — abre un tutorial paso a paso (reutiliza el
+  modal existente), con contenido adaptado a cada página (demo vs app real)
+- El aviso de nueva versión ya no recarga solo: muestra un banner fijo arriba con
+  botón "Actualizar ahora" (y opción de cerrarlo), para no interrumpir a media búsqueda
+- Corregido un falso positivo: el banner podía aparecer también en la primera visita
+  (sin versión previa que actualizar) porque `controllerchange` dispara igual la
+  primera vez que el service worker toma el control vía `clients.claim()` — ahora se
+  compara si la pestaña ya tenía un controlador antes de este script para distinguir
+  "primera instalación" de "actualización real"
+
 ### v1.5.0 — fix importante
 - **Bug real corregido**: `sw.js` tenía una condición de carrera al clonar la `Response`
   (`cache.put(..., networkResponse.clone())`) que podía lanzar

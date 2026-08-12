@@ -21,11 +21,18 @@
 </head>
 <body>
 
+<div class="update-banner" id="updateBanner">
+  <span>Hay una versión nueva de FindShow disponible.</span>
+  <button class="btn" id="btnActualizarVersion">Actualizar ahora</button>
+  <button class="update-banner-dismiss" id="btnCerrarUpdateBanner" aria-label="Cerrar">&times;</button>
+</div>
+
 <div class="wrap">
 
   <nav class="page-nav">
     <a href="demo.html" class="page-nav-link active">Demo</a>
     <a href="index.html" class="page-nav-link">App real</a>
+    <button class="page-nav-link" id="btnTutorial" type="button">¿Cómo funciona?</button>
   </nav>
 
   <div class="demo-banner">&gt; MODO DEMO — datos de prueba, sin conexión real a Spotify ni Ticketmaster</div>
@@ -91,15 +98,21 @@
 <script src="js/demo.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    var yaRecargando = false;
+    var teniaControladorPrevio = !!navigator.serviceWorker.controller;
 
     navigator.serviceWorker.addEventListener('controllerchange', function() {
-      if (yaRecargando) return;
-      yaRecargando = true;
-      if (typeof showToast === 'function') {
-        showToast('Nueva versión cargada, actualizando...', 'info', 1500);
+      if (!teniaControladorPrevio) {
+        teniaControladorPrevio = true;
+        return;
       }
-      setTimeout(function() { window.location.reload(); }, 600);
+      document.getElementById('updateBanner').classList.add('active');
+    });
+
+    document.getElementById('btnActualizarVersion').addEventListener('click', function() {
+      window.location.reload();
+    });
+    document.getElementById('btnCerrarUpdateBanner').addEventListener('click', function() {
+      document.getElementById('updateBanner').classList.remove('active');
     });
 
     window.addEventListener('load', function() {

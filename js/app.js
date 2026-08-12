@@ -148,6 +148,37 @@ if (btnCerrarSesionGate) {
 
 esperarGoogleSDK();
 
+// ============================================================
+// TUTORIAL — modal "¿Cómo funciona?"
+// ============================================================
+var btnTutorial = document.getElementById('btnTutorial');
+if (btnTutorial) {
+  btnTutorial.addEventListener('click', function() {
+    var html =
+      '<div class="modal-header">' +
+        '<span class="modal-artist">Guía rápida</span>' +
+        '<span class="modal-title">Cómo funciona FindShow</span>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<ol class="tutorial-steps">' +
+          '<li><strong>Busca un artista y/o una ciudad</strong>' +
+            'Escribe uno, otro, o ambos, y pulsa Buscar. Sin login, sin cuenta — funciona directo.</li>' +
+          '<li><strong>El radio de distancia</strong>' +
+            'Sin ciudad, solo se muestran conciertos dentro del radio (km) desde Cantabria. Con ciudad, se busca ahí sin límite de distancia.</li>' +
+          '<li><strong>Conectar con Spotify (opcional)</strong>' +
+            'No hace falta para buscar. Si te conectas, tus artistas seguidos aparecen como chips: un clic busca ese artista al momento.</li>' +
+          '<li><strong>Conciertos pasados</strong>' +
+            'Escribe un artista y pulsa "Ver conciertos pasados" para su historial con setlist completo, filtrable por año.</li>' +
+          '<li><strong>Ordenar, agrupar, y vista calendario</strong>' +
+            'Los resultados se pueden ordenar por fecha/artista/distancia, agrupar por artista/mes, y ver en lista o en calendario.</li>' +
+          '<li><strong>Clic en un concierto</strong>' +
+            'Abre la ficha con fecha completa, dirección, distancia y precio si está disponible.</li>' +
+        '</ol>' +
+      '</div>';
+    openModal(html);
+  });
+}
+
 // (el Redirect URI ya no vive en un campo — se calcula con spotifyRedirectUri())
 
 // ============================================================
