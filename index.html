@@ -55,70 +55,28 @@
   <!-- ===================== TAB CONCIERTOS ===================== -->
   <div class="panel active" id="panel-conciertos">
 
-    <details class="config">
-      <summary>&gt; configuración (client id, redirect uri, api key)</summary>
-      <div class="config-grid">
-        <div class="field">
-          <label>Spotify Client ID</label>
-          <input type="text" id="spotifyClientId" placeholder="pega aquí tu Client ID de developer.spotify.com/dashboard">
-        </div>
-        <div class="field">
-          <label>Redirect URI (debe coincidir EXACTO con la registrada en tu app)</label>
-          <input type="text" id="spotifyRedirectUri">
-        </div>
-        <div class="field">
-          <label>Ticketmaster API Key</label>
-          <input type="text" id="tmApiKey" placeholder="pega aquí tu apikey de developer.ticketmaster.com">
-        </div>
-        <div class="field">
-          <label>Radio desde Santander, Cantabria (km)</label>
-          <input type="number" id="radioKm" value="150" min="10" max="1000" step="10">
-        </div>
-        <div class="field">
-          <label>setlist.fm API Key (para conciertos pasados)</label>
-          <input type="text" id="setlistApiKey" placeholder="pega aquí tu apikey de api.setlist.fm">
-        </div>
-        <div class="field">
-          <label>Proxy CORS (opcional, solo si setlist.fm da error de CORS — ver README)</label>
-          <input type="text" id="corsProxyUrl" placeholder="p.ej. https://tu-proxy.azurewebsites.net/api/proxy?url=">
-        </div>
-      </div>
-      <div class="hint">
-        Nada de esto se guarda en ningún servidor: vive solo en esta sesión del navegador.
-        Necesitas: 1) crear una app en <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a>
-        con esta misma URL exacta como Redirect URI y el scope <code>user-follow-read</code> activado,
-        y 2) una key gratuita en <a href="https://developer.ticketmaster.com" target="_blank">developer.ticketmaster.com</a>.
-        Para conciertos pasados hace falta además una key gratuita de
-        <a href="https://api.setlist.fm/docs/1.0/index.html" target="_blank">api.setlist.fm</a> —
-        <strong>ojo, esta API no admite peticiones directas desde el navegador (CORS)</strong>,
-        mira la sección correspondiente del README para las opciones.
-      </div>
-    </details>
-
     <div class="search-panel">
       <div class="search-fields">
         <input type="text" id="artistaQuery" class="search-input" placeholder="Artista (ej. Sôber)">
         <input type="text" id="ciudadQuery" class="search-input" placeholder="Ciudad (ej. Madrid) — opcional">
         <button class="btn" id="btnBuscarLibre">Buscar</button>
       </div>
+      <div class="field" style="max-width:240px;margin-top:12px;">
+        <label>Radio desde Santander, Cantabria (km)</label>
+        <input type="number" id="radioKm" value="150" min="10" max="1000" step="10">
+      </div>
       <p class="hint" style="margin-top:10px;">
-        Escribe un artista, una ciudad, o ambos. Si dejas la ciudad vacía, se filtra por el radio
-        desde Cantabria del panel de configuración de arriba; si pones una ciudad, se busca ahí
-        directamente sin límite de distancia.
+        Escribe un artista, una ciudad, o ambos. Sin ciudad, se filtra por el radio de arriba;
+        con ciudad, se busca ahí directamente sin límite de distancia.
       </p>
     </div>
 
-    <details class="config" style="margin-top:16px;">
-      <summary>&gt; Conectar con Spotify (opcional) — accesos rápidos a tus artistas seguidos</summary>
-      <p class="hint" style="margin-top:12px;">
-        No hace falta para buscar — la búsqueda de arriba funciona sola con la key de Ticketmaster.
-        Conectar Spotify solo añade tus artistas seguidos como chips de acceso rápido, y una opción
-        para buscarlos todos de golpe.
-      </p>
-      <button class="btn secondary" id="btnSpotifyLogin" style="margin-top:12px;">Conectar con Spotify</button>
-      <button class="btn secondary" id="btnBuscarConciertos" style="display:none;margin-top:12px;margin-left:10px;">Buscar todos mis artistas seguidos</button>
-      <div class="artist-list" id="artistList" style="margin-top:14px;"></div>
-    </details>
+    <div style="margin-top:16px;">
+      <button class="btn secondary" id="btnSpotifyLogin">Conectar con Spotify</button>
+      <button class="btn secondary" id="btnBuscarConciertos" style="display:none;margin-left:10px;">Buscar todos mis artistas seguidos</button>
+      <p class="hint" style="margin-top:10px;">Opcional — añade tus artistas seguidos como accesos rápidos de búsqueda.</p>
+      <div class="artist-list" id="artistList" style="margin-top:10px;"></div>
+    </div>
 
     <div class="status-line" id="statusConciertos"></div>
     <div class="progress-bar" id="progressBar"><div class="progress-bar-fill" id="progressBarFill"></div></div>
@@ -133,7 +91,7 @@
     <div class="cors-note" id="corsNote" style="display:none;">
       setlist.fm no permite peticiones directas desde el navegador (CORS). Necesitas un proxy propio
       (mira "Conciertos pasados" en el <a href="README.md">README</a> para un ejemplo con Azure Functions)
-      o pegar la URL de uno en el panel de configuración de arriba.
+      o configurar la constante <code>CORS_PROXY_URL</code> en <code>js/app.js</code>.
     </div>
 
     <div class="controls-row" id="controlsRow">
@@ -189,9 +147,9 @@
     </p>
     <p>
       Privacidad: esta app no tiene servidor. Todo el procesamiento ocurre en tu navegador.
-      Las claves de API y el token de acceso viven solo en tu sesión (no se envían a terceros
-      salvo a Spotify/Ticketmaster para hacer las consultas correspondientes) y no se almacenan
-      ni transmiten a ningún servidor propio. No se usan cookies de seguimiento ni analítica.
+      El token de Spotify vive solo en tu sesión y no se envía a terceros salvo a
+      Spotify/Ticketmaster/setlist.fm para hacer las consultas correspondientes. No se usan
+      cookies de seguimiento ni analítica.
     </p>
     <p><button class="gate-logout" id="btnCerrarSesionGate">Cerrar sesión de Google</button></p>
   </footer>

@@ -52,16 +52,24 @@ sin necesidad de credenciales ni servidor.
 
 ## Uso real
 
+Las claves ya no se piden por pantalla — se editan directamente en `js/app.js` (al principio
+del archivo), igual que el resto de constantes de configuración. Más simple de desplegar
+(no hay que volver a pegarlas cada vez que entras) y más simple de compartir con quien quieras
+que la use.
+
 **Lo mínimo para buscar conciertos** (sin Spotify):
 
 1. Consigue una API key gratuita en [developer.ticketmaster.com](https://developer.ticketmaster.com).
-2. Sirve el proyecto por HTTP — no funciona con `file://`:
+2. Edita `js/app.js` y pon tu key en:
+   ```javascript
+   var TICKETMASTER_API_KEY = 'tu-key-aquí';
+   ```
+3. Sirve el proyecto por HTTP — no funciona con `file://`:
    ```bash
    python3 -m http.server 8080
    ```
    (o publícalo en GitHub Pages / cualquier hosting HTTPS, como ya tienes con
    `wolologger.github.io/FindShow`)
-3. Abre `index.html`, despliega "▾ configuración", pega la API key de Ticketmaster.
 4. Escribe un artista, una ciudad, o ambos, y pulsa **Buscar**.
 
 **Para añadir accesos rápidos a tus artistas seguidos** (opcional):
@@ -72,18 +80,24 @@ sin necesidad de credenciales ni servidor.
 6. Registra en el dashboard de Spotify, como Redirect URI, la misma URL exacta
    donde sirvas `index.html`. Desde 2025 Spotify exige loopback explícito en local
    (`http://127.0.0.1:8080/index.html`, `localhost` ya no vale) o HTTPS en producción.
-7. Pega el Client ID en el panel de configuración y pulsa "Conectar con Spotify"
-   (dentro del desplegable "Conectar con Spotify (opcional)").
+7. Edita `js/app.js`:
+   ```javascript
+   var SPOTIFY_CLIENT_ID = 'tu-client-id-aquí';
+   ```
+8. Pulsa "Conectar con Spotify" en la app.
 
 
 ## Conciertos pasados (setlist.fm)
 
 Por defecto solo se ven conciertos futuros. El botón **"Ver conciertos pasados"** cambia a un modo
-que busca el historial de los artistas que tengas seleccionados (chips activos) en
-[setlist.fm](https://www.setlist.fm/), con filtro por año y setlist completo expandible por concierto.
+que busca el historial del artista que tengas escrito en el buscador (o el que pulses como chip),
+con filtro por año y setlist completo expandible por concierto.
 
 **Requiere una API key gratuita** de [api.setlist.fm](https://api.setlist.fm/docs/1.0/index.html)
-(solicitud manual, uso no comercial).
+(solicitud manual, uso no comercial). Ponla en `js/app.js`:
+```javascript
+var SETLISTFM_API_KEY = 'tu-key-aquí';
+```
 
 ### ⚠️ Limitación real: CORS
 
@@ -118,8 +132,11 @@ en vez de fallar en silencio.
    }
    ```
 
-   Despliega esto, pega la URL (`https://tu-function.azurewebsites.net/api/proxy?url=`) en el campo
-   "Proxy CORS" del panel de configuración, y la app lo usará automáticamente.
+   Despliega esto y pon la URL (`https://tu-function.azurewebsites.net/api/proxy?url=`) en
+   `js/app.js`:
+   ```javascript
+   var CORS_PROXY_URL = 'https://tu-function.azurewebsites.net/api/proxy?url=';
+   ```
 
 2. **Proxy CORS público** (`corsproxy.io` y similares) — funciona para probar rápido, pero
    **no lo uses más allá de una prueba personal**: no controlas ese servidor, tu API key pasa por
@@ -241,6 +258,12 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 - PWA completa: `manifest.json`, iconos en todos los tamaños (incluida variante maskable),
   favicon, capturas de pantalla, y service worker con caché de app shell (sin cachear nunca las APIs)
 - Lista para empaquetar como APK/AAB vía PWABuilder — ver sección "Convertir en APK"
+
+### v1.3.0
+- Eliminado el panel de configuración con campos de API keys visibles en pantalla
+- Las claves (Spotify, Ticketmaster, setlist.fm, proxy CORS) se editan ahora como
+  constantes al principio de `js/app.js`, igual que `GOOGLE_CLIENT_ID`/`EMAILS_PERMITIDOS`
+- El login de Spotify queda reducido a un único botón, sin campos técnicos visibles
 
 ### v1.2.0
 - **Cambio de arquitectura**: la búsqueda directa por artista y/o ciudad pasa a ser la
