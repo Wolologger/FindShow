@@ -1,37 +1,47 @@
 // ============================================================
 // FindShow — demo.js
-// v1.1.0 — 12/08/26
+// v1.3.0 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
+// v1.3.0 (12/08/26) — Modal de tutorial "¿Cómo funciona?"
+// v1.2.0 (12/08/26) — Eliminado "Minutos escuchados" y las tabs (un solo
+//                      panel de conciertos, siempre visible)
 // v1.1.0 (12/08/26) — Conciertos pasados con setlist expandible y filtro
 //                      por año (datos mock); toasts; modal de detalle
-// v1.0.1 (12/08/26) — Chips clicables como filtro (multi-selección)
-// v1.0.0 (12/08/26) — Versión inicial: datos de prueba, filtro geográfico,
-//                      vistas lista/calendario, ordenar/agrupar
 // ============================================================
 // Demo con datos de prueba (sin llamadas reales a APIs)
 // ============================================================
 
-// ---- Tabs (con transición de entrada) ----
-function activarPanel(tabName) {
-  document.querySelectorAll('.panel').forEach(function(p) {
-    p.classList.remove('active', 'show');
-  });
-  var target = document.getElementById('panel-' + tabName);
-  target.classList.add('active');
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() { target.classList.add('show'); });
+// ============================================================
+// TUTORIAL — modal "¿Cómo funciona?"
+// ============================================================
+var btnTutorial = document.getElementById('btnTutorial');
+if (btnTutorial) {
+  btnTutorial.addEventListener('click', function() {
+    var html =
+      '<div class="modal-header">' +
+        '<span class="modal-artist">Guía rápida</span>' +
+        '<span class="modal-title">Cómo funciona FindShow</span>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<ol class="tutorial-steps">' +
+          '<li><strong>Esto es la demo</strong>' +
+            'Los 6 artistas y los conciertos de aquí son datos inventados, para que veas el diseño sin necesitar credenciales.</li>' +
+          '<li><strong>Chips de artista</strong>' +
+            'Clic en un chip para filtrar los resultados a ese artista.</li>' +
+          '<li><strong>Radio de distancia</strong>' +
+            'El slider filtra los conciertos por km desde Cantabria.</li>' +
+          '<li><strong>Conciertos pasados</strong>' +
+            'Pulsa "Ver conciertos pasados" para el historial con setlist de ejemplo, filtrable por año.</li>' +
+          '<li><strong>Ordenar, agrupar, calendario</strong>' +
+            'Prueba los desplegables y el toggle Lista/Calendario.</li>' +
+          '<li><strong>Para buscar conciertos reales</strong>' +
+            'Ve a la pestaña "App real" arriba — ahí funciona con datos de Ticketmaster de verdad.</li>' +
+        '</ol>' +
+      '</div>';
+    openModal(html);
   });
 }
-
-document.querySelectorAll('.tab-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    activarPanel(btn.dataset.tab);
-  });
-});
-activarPanel('conciertos');
 
 // ---- Datos de prueba: artistas seguidos ----
 var artistasSeguidos = ['Sôber', 'Boikot', 'Reincidentes', 'Ska-P', 'Extremoduro', 'Def Con Dos'];
@@ -513,35 +523,4 @@ function mostrarDetalleSetlistDemo(item) {
   openModal(html);
 }
 
-// ---- Datos de prueba: minutos escuchados ----
-var statsDemo = {
-  totalHoras: 842.3,
-  totalDias: 35.1,
-  ranking: [
-    { nombre: 'Sôber',        horas: 96.4 },
-    { nombre: 'Extremoduro',  horas: 88.1 },
-    { nombre: 'Boikot',       horas: 71.9 },
-    { nombre: 'Ska-P',        horas: 64.2 },
-    { nombre: 'Reincidentes', horas: 52.7 },
-    { nombre: 'Def Con Dos',  horas: 41.5 },
-    { nombre: 'Marea',        horas: 38.0 },
-    { nombre: 'Rise Against', horas: 29.6 }
-  ]
-};
 
-(function renderStatsDemo() {
-  var maxHoras = statsDemo.ranking[0].horas;
-  var html = '<div class="big-number">' + statsDemo.totalHoras +
-    '<small>horas totales escuchadas &middot; ' + statsDemo.totalDias + ' días</small></div>';
-  html += '<div style="margin-top:32px;">';
-  statsDemo.ranking.forEach(function(r) {
-    var pct = Math.max(4, (r.horas / maxHoras) * 100);
-    html += '<div class="bar-row">' +
-      '<div class="bar-name">' + r.nombre + '</div>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="bar-val">' + r.horas + 'h</div>' +
-      '</div>';
-  });
-  html += '</div>';
-  document.getElementById('statsResults').innerHTML = html;
-})();
