@@ -1,17 +1,12 @@
 // ============================================================
 // FindShow — service worker mínimo
-// v1.6.0 — 12/08/26
+// v1.8.2 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
-// v1.6.0 (12/08/26) — Bump de caché: banner de "nueva versión" con botón
-//                      manual (antes recargaba sola) + modal de tutorial
-// v1.5.0 (12/08/26) — Corregido bug real: cache.put(response.clone()) podía
-//                      lanzar "Response body is already used" y dejaba la
-//                      caché desactualizada para siempre. Cambiado a
-//                      estrategia network-first (más simple y sin la
-//                      condición de carrera). Las páginas detectan la
-//                      actualización con el evento estándar
-//                      'controllerchange' y se recargan solas.
+// v1.8.2 (12/08/26) — Bump por disciplina: index.html cambió (quitado id
+//                      controlsRow sin uso) y no se había subido la versión
+// v1.8.1 (12/08/26) — Bump por claves reales rellenadas en app.js
+// v1.8.0 (12/08/26) — Bump por cambios en app.js (modal de Ticketmaster API key)
 // ============================================================
 // Solo cachea el "app shell" (HTML/CSS/JS/iconos propios) para que
 // la PWA sea instalable y arranque offline. Las llamadas a Spotify,
@@ -23,7 +18,7 @@
 // versiones viejas cacheadas indefinidamente.
 // ============================================================
 
-var CACHE_NAME = 'findshow-shell-v1.6.0';
+var CACHE_NAME = 'findshow-shell-v1.8.2';
 
 var APP_SHELL = [
   './',

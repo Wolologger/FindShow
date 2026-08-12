@@ -57,17 +57,19 @@ que la use.
 **Lo mínimo para buscar conciertos** (sin Spotify):
 
 1. Consigue una API key gratuita en [developer.ticketmaster.com](https://developer.ticketmaster.com).
-2. Edita `js/app.js` y pon tu key en:
-   ```javascript
-   var TICKETMASTER_API_KEY = 'tu-key-aquí';
-   ```
-3. Sirve el proyecto por HTTP — no funciona con `file://`:
+2. Sirve el proyecto por HTTP — no funciona con `file://`:
    ```bash
    python3 -m http.server 8080
    ```
    (o publícalo en GitHub Pages / cualquier hosting HTTPS, como ya tienes con
    `wolologger.github.io/FindShow`)
-4. Escribe un artista, una ciudad, o ambos, y pulsa **Buscar**.
+3. Escribe un artista, una ciudad, o ambos, y pulsa **Buscar**. Si no has configurado
+   la key en el código, la app te la pide con un modal la primera vez y la recuerda
+   en ese navegador — no hace falta tocar `js/app.js` en absoluto. Si prefieres
+   dejarla fija en el código:
+   ```javascript
+   var TICKETMASTER_API_KEY = 'tu-key-aquí';
+   ```
 
 **Para añadir accesos rápidos a tus artistas seguidos** (opcional):
 
@@ -77,11 +79,21 @@ que la use.
 6. Registra en el dashboard de Spotify, como Redirect URI, la misma URL exacta
    donde sirvas `index.html`. Desde 2025 Spotify exige loopback explícito en local
    (`http://127.0.0.1:8080/index.html`, `localhost` ya no vale) o HTTPS en producción.
-7. Edita `js/app.js`:
-   ```javascript
-   var SPOTIFY_CLIENT_ID = 'tu-client-id-aquí';
-   ```
+7. Configura el Client ID de una de estas dos formas:
+   - **Editando el código** (queda en el repo, no es sensible — ver nota más abajo):
+     ```javascript
+     var SPOTIFY_CLIENT_ID = 'tu-client-id-aquí';
+     ```
+   - **Sin tocar el código**: deja la constante como está y pulsa directamente
+     "Conectar con Spotify" en la app — te lo pedirá una vez por pantalla y lo
+     recordará solo en ese navegador (`localStorage`), sin subirse a ningún sitio.
 8. Pulsa "Conectar con Spotify" en la app.
+
+> El Client ID de Spotify **no es un dato sensible** — el flujo OAuth con PKCE que usa
+> esta app existe justo para que las apps públicas (como esta, sin backend) no necesiten
+> guardar ningún secreto. Lo que sí protege el acceso son el Redirect URI registrado y
+> la lista de usuarios permitidos del Dashboard, no que el Client ID esté oculto.
+> Aun así, si prefieres no verlo en tu repo público, usa la segunda opción de arriba.
 
 
 ## Conciertos pasados (setlist.fm)
@@ -230,6 +242,36 @@ Vanilla JS (sin frameworks, sin build step), CSS con variables nativas,
 Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
+
+### v1.8.2
+- Bump de versión "por disciplina": el commit anterior (quitar `controlsRow`) tocó
+  `index.html` sin subir `CACHE_NAME`, rompiendo la regla que dice este mismo README.
+  No había riesgo real (el service worker es network-first desde v1.5.0), pero
+  mejor aplicar la regla sin excepciones que decidir caso a caso cuándo "cuenta"
+
+### v1.8.1
+- Rellenados `SPOTIFY_CLIENT_ID` y `TICKETMASTER_API_KEY` con las claves reales
+  directamente en el código (a petición explícita, sabiendo que quedan visibles
+  en el historial de git del repo público)
+- Auditoría completa: comprobados todos los botones/IDs del HTML contra su uso
+  real en JS. Quitado `controlsRow`, un id sin ningún uso (ni JS ni CSS)
+
+### v1.8.0
+- Ticketmaster con la misma alternativa que Spotify: si `TICKETMASTER_API_KEY` no
+  está configurada en el código, un modal la pide una vez y la recuerda en
+  `localStorage` de ese navegador. La búsqueda que estabas intentando (por
+  artista/ciudad, o la bulk de artistas seguidos) se relanza sola en cuanto
+  guardas la key, sin que tengas que volver a pulsar "Buscar"
+
+### v1.7.0
+- Alternativa al `SPOTIFY_CLIENT_ID` fijo en el código: si no está configurado ahí,
+  la app lo pide una vez con un modal y lo recuerda en `localStorage` de ese
+  navegador — nunca toca el código ni queda en el repo. (El Client ID de Spotify
+  no es un secreto por diseño — el flujo OAuth con PKCE existe justo para no
+  necesitarlo — pero para quien prefiera no verlo ni en el repo público, esta es
+  la alternativa.)
+- Corregido: se había colado por error un checkbox "Solo fin de semana" sin
+  ninguna lógica detrás (quedó del backlog que se pidió NO implementar todavía) — eliminado
 
 ### v1.6.0
 - Botón "¿Cómo funciona?" en la nav — abre un tutorial paso a paso (reutiliza el
