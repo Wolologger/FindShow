@@ -1,5 +1,15 @@
 // ============================================================
-// FindShow — v1.0
+// FindShow — app.js
+// v1.4.0 — 12/08/26
+// ------------------------------------------------------------
+// CHANGELOG (últimas 3):
+// v1.4.0 (12/08/26) — Eliminado "Minutos escuchados" y las tabs; queda
+//                      un único panel de conciertos, siempre visible
+// v1.3.0 (12/08/26) — Fuera el panel de configuración con campos de API keys;
+//                      ahora se editan como constantes al principio de este archivo
+// v1.2.0 (12/08/26) — Búsqueda directa por artista/ciudad sin Spotify;
+//                      caché de resultados (20 min); Spotify pasa a opcional
+// ============================================================
 // Utilidades de almacenamiento: usa window.storage si existe
 // (entorno artifact de Claude), y cae a sessionStorage si no
 // (cuando el archivo se aloja fuera, ej. GitHub Pages / local).
@@ -36,6 +46,20 @@ var GOOGLE_CLIENT_ID = 'TU_CLIENT_ID.apps.googleusercontent.com';
 var EMAILS_PERMITIDOS = [
   // 'tu-email@gmail.com',
 ];
+
+// ============================================================
+// CLAVES DE API — edítalas aquí, no se piden por pantalla.
+// Son las tuyas propias (developer.spotify.com, developer.ticketmaster.com,
+// api.setlist.fm) — ver README para cómo conseguirlas.
+// ============================================================
+var SPOTIFY_CLIENT_ID = 'TU_SPOTIFY_CLIENT_ID';
+var TICKETMASTER_API_KEY = 'TU_TICKETMASTER_API_KEY';
+var SETLISTFM_API_KEY = 'TU_SETLISTFM_API_KEY'; // opcional, solo para "conciertos pasados"
+var CORS_PROXY_URL = ''; // opcional, solo si setlist.fm da error de CORS — ver README
+
+function spotifyRedirectUri() {
+  return window.location.origin + window.location.pathname;
+}
 
 function decodeJwtPayload(token) {
   var base64Url = token.split('.')[1];
@@ -124,30 +148,7 @@ if (btnCerrarSesionGate) {
 
 esperarGoogleSDK();
 
-// ---- Tabs (con transición de entrada) ----
-function activarPanel(tabName) {
-  document.querySelectorAll('.panel').forEach(function(p) {
-    p.classList.remove('active', 'show');
-  });
-  var target = document.getElementById('panel-' + tabName);
-  target.classList.add('active');
-  // doble rAF: fuerza al navegador a pintar display:block antes de animar opacity/transform
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() { target.classList.add('show'); });
-  });
-}
-
-document.querySelectorAll('.tab-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    activarPanel(btn.dataset.tab);
-  });
-});
-activarPanel('conciertos');
-
-// Redirect URI por defecto = esta misma página
-document.getElementById('spotifyRedirectUri').value = window.location.origin + window.location.pathname;
+// (el Redirect URI ya no vive en un campo — se calcula con spotifyRedirectUri())
 
 // ============================================================
 // SPOTIFY OAuth (PKCE, sin backend)
@@ -176,9 +177,12 @@ function base64urlencode(buffer) {
 }
 
 document.getElementById('btnSpotifyLogin').addEventListener('click', async function() {
-  var clientId = document.getElementById('spotifyClientId').value.trim();
-  var redirectUri = document.getElementById('spotifyRedirectUri').value.trim();
-  if (!clientId) { showToast('Falta el Client ID de Spotify (panel de configuración)', 'error'); return; }
+  var clientId = SPOTIFY_CLIENT_ID;
+  var redirectUri = spotifyRedirectUri();
+  if (!clientId || clientId === 'TU_SPOTIFY_CLIENT_ID') {
+    showToast('Falta configurar SPOTIFY_CLIENT_ID en js/app.js', 'error');
+    return;
+  }
 
   setBtnLoading(this, true);
 
@@ -234,8 +238,6 @@ async function handleSpotifyCallback() {
   // limpia el ?code= de la url
   window.history.replaceState({}, document.title, window.location.pathname);
 
-  document.getElementById('spotifyClientId').value = clientId;
-  document.getElementById('spotifyRedirectUri').value = redirectUri;
   document.getElementById('btnBuscarConciertos').style.display = 'inline-block';
   setStatus('conectado. cargando artistas seguidos...', true);
   await cargarArtistasSeguidos();
@@ -372,9 +374,9 @@ async function guardarCache(key, data) {
 }
 
 async function buscarTodosLosSeguidos() {
-  var apiKey = document.getElementById('tmApiKey').value.trim();
+  var apiKey = TICKETMASTER_API_KEY;
   var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
-  if (!apiKey) { showToast('Falta la API Key de Ticketmaster (panel de configuración)', 'error'); return; }
+  if (!apiKey || apiKey === 'TU_TICKETMASTER_API_KEY') { showToast('Falta configurar TICKETMASTER_API_KEY en js/app.js', 'error'); return; }
   if (artistasSeguidos.length === 0) { setStatus('no hay artistas cargados'); return; }
 
   var btn = document.getElementById('btnBuscarConciertos');
@@ -446,9 +448,9 @@ function ejecutarBusquedaPrincipal() {
 }
 
 async function buscarLibre(artista, ciudad) {
-  var apiKey = document.getElementById('tmApiKey').value.trim();
+  var apiKey = TICKETMASTER_API_KEY;
   var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
-  if (!apiKey) { showToast('Falta la API Key de Ticketmaster (panel de configuración)', 'error'); return; }
+  if (!apiKey || apiKey === 'TU_TICKETMASTER_API_KEY') { showToast('Falta configurar TICKETMASTER_API_KEY en js/app.js', 'error'); return; }
   if (!artista && !ciudad) { showToast('Escribe un artista, una ciudad, o ambos', 'info'); return; }
 
   var cacheKey = 'tm_' + artista.toLowerCase() + '|' + ciudad.toLowerCase() + '|' + (ciudad ? 'sin-radio' : radio);
@@ -824,9 +826,9 @@ function parseFechaSetlist(fechaDDMMYYYY) {
 }
 
 async function buscarSetlists() {
-  var apiKey = document.getElementById('setlistApiKey').value.trim();
+  var apiKey = SETLISTFM_API_KEY;
   var artista = document.getElementById('artistaQuery').value.trim();
-  if (!apiKey) { showToast('Falta la API Key de setlist.fm (panel de configuración)', 'error'); return; }
+  if (!apiKey || apiKey === 'TU_SETLISTFM_API_KEY') { showToast('Falta configurar SETLISTFM_API_KEY en js/app.js', 'error'); return; }
   if (!artista) {
     showToast('Escribe un artista arriba (o pulsa un chip) para ver su historial', 'info');
     document.getElementById('ticketResults').innerHTML = '<div class="empty">Escribe el nombre de un artista en el buscador de arriba para ver su historial de conciertos.</div>';
@@ -834,7 +836,7 @@ async function buscarSetlists() {
     return;
   }
 
-  var proxyUrl = document.getElementById('corsProxyUrl').value.trim();
+  var proxyUrl = CORS_PROXY_URL;
   var cacheKey = 'sfm_' + artista.toLowerCase();
 
   var enCache = await leerCache(cacheKey);
@@ -1019,68 +1021,6 @@ function mostrarDetalleSetlist(item, canciones) {
     '</div>';
 
   openModal(html);
-}
-
-// ============================================================
-// MINUTOS ESCUCHADOS (historial extendido, local, sin servidor)
-// ============================================================
-document.getElementById('fileInput').addEventListener('change', async function(e) {
-  var files = Array.from(e.target.files);
-  if (files.length === 0) return;
-
-  var statusEl = document.getElementById('statusStats');
-  statusEl.innerHTML = '<span class="spinner"></span>procesando ' + files.length + ' archivo(s)...';
-
-  // Lee todos los ficheros en paralelo (FileReader no bloquea red, así que no hace falta límite de concurrencia)
-  var textos = await Promise.all(files.map(function(f) { return f.text(); }));
-
-  var totalMs = 0;
-  var porArtista = {};
-
-  textos.forEach(function(text) {
-    var json;
-    try { json = JSON.parse(text); } catch (err) { return; }
-    if (!Array.isArray(json)) return;
-
-    json.forEach(function(entry) {
-      var ms = entry.msPlayed || entry.ms_played || 0;
-      var artista = entry.artistName || entry.master_metadata_album_artist_name || 'Desconocido';
-      totalMs += ms;
-      porArtista[artista] = (porArtista[artista] || 0) + ms;
-    });
-  });
-
-  statusEl.textContent = '> ' + files.length + ' archivo(s) procesados';
-  var horasTotales = (totalMs / 3600000).toFixed(1);
-  showToast('Historial procesado: ' + horasTotales + ' horas escuchadas en total', 'success');
-  renderStats(totalMs, porArtista);
-});
-
-function renderStats(totalMs, porArtista) {
-  var horas = (totalMs / 3600000).toFixed(1);
-  var dias = (totalMs / 86400000).toFixed(1);
-
-  var ranking = Object.keys(porArtista)
-    .map(function(nombre) { return { nombre: nombre, ms: porArtista[nombre] }; })
-    .sort(function(a, b) { return b.ms - a.ms; })
-    .slice(0, 15);
-
-  var maxMs = ranking.length ? ranking[0].ms : 1;
-
-  var html = '<div class="big-number">' + horas + '<small>horas totales escuchadas &middot; ' + dias + ' días</small></div>';
-  html += '<div style="margin-top:32px;">';
-  ranking.forEach(function(r) {
-    var horasArtista = (r.ms / 3600000).toFixed(1);
-    var pct = Math.max(4, (r.ms / maxMs) * 100);
-    html += '<div class="bar-row">' +
-      '<div class="bar-name">' + r.nombre + '</div>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="bar-val">' + horasArtista + 'h</div>' +
-      '</div>';
-  });
-  html += '</div>';
-
-  document.getElementById('statsResults').innerHTML = html;
 }
 
 // Al cargar la página, comprueba si venimos de vuelta del login de Spotify

@@ -1,3 +1,16 @@
+/* ============================================================
+   FindShow — styles.css
+   v1.3.0 — 12/08/26
+   ------------------------------------------------------------
+   CHANGELOG (últimas 3):
+   v1.3.0 (12/08/26) — Quitadas las reglas de tabs/panel y de "minutos
+                        escuchados" (upload-zone, big-number, bar-*, callout)
+   v1.2.0 (12/08/26) — Panel de búsqueda directa; pantalla de acceso
+                        (Google Sign-In)
+   v1.1.0 (12/08/26) — Toasts, modal de detalle, conciertos pasados/setlists,
+                        responsive completo, transiciones
+   ============================================================ */
+
 /* Transición nativa entre páginas (Chrome/Edge modernos; el resto lo ignora sin romper nada) */
 @view-transition {
   navigation: auto;
@@ -64,31 +77,6 @@
     font-size:12px;
     color:var(--paper-dim);
     letter-spacing:1px;
-  }
-
-  /* ---- Tabs ---- */
-  .tabs{display:flex;gap:2px;margin-bottom:24px;}
-  .tab-btn{
-    flex:1;
-    background:var(--ink-soft);
-    color:var(--paper-dim);
-    border:1px solid var(--line);
-    font-family:'Oswald',sans-serif;
-    text-transform:uppercase;
-    letter-spacing:1px;
-    font-size:14px;
-    padding:14px 10px;
-    cursor:pointer;
-    transition:background .15s,color .15s;
-  }
-  .tab-btn.active{background:var(--accent);color:var(--ink);border-color:var(--accent);}
-  .tab-btn:hover:not(.active){color:var(--paper);}
-
-  .panel{display:none;opacity:0;transform:translateY(6px);}
-  .panel.active{display:block;}
-  .panel.active.show{opacity:1;transform:translateY(0);transition:opacity .18s ease,transform .18s ease;}
-  @media (prefers-reduced-motion: reduce){
-    .panel.active.show{transition:none;}
   }
 
   /* ---- Config box ---- */
@@ -339,59 +327,6 @@
     .calendar-dow{font-size:9px;}
   }
 
-  /* ---- Stats tab ---- */
-  .upload-zone{
-    border:2px dashed var(--line);
-    padding:36px 20px;
-    text-align:center;
-    margin-bottom:24px;
-  }
-  .upload-zone input{display:none;}
-  .upload-label{
-    font-family:'Oswald',sans-serif;
-    text-transform:uppercase;
-    letter-spacing:1px;
-    color:var(--teal);
-    cursor:pointer;
-    font-size:15px;
-  }
-  .big-number{
-    font-family:'Oswald',sans-serif;
-    font-weight:700;
-    font-size:clamp(48px,10vw,86px);
-    line-height:1;
-    color:var(--accent2);
-  }
-  .big-number small{
-    display:block;
-    font-family:'JetBrains Mono',monospace;
-    font-size:13px;
-    color:var(--paper-dim);
-    letter-spacing:1px;
-    font-weight:400;
-    margin-top:6px;
-  }
-  .bar-row{display:grid;grid-template-columns:140px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;animation:ticketIn .2s ease both;}
-  @media (prefers-reduced-motion: reduce){
-    .bar-row{animation:none;}
-  }
-  .bar-name{font-family:'JetBrains Mono',monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .bar-track{background:var(--ink-soft);height:18px;position:relative;}
-  .bar-fill{background:var(--teal);height:100%;}
-  .bar-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--paper-dim);text-align:right;}
-
-  .callout{
-    background:var(--ink-soft);
-    border-left:3px solid var(--accent2);
-    padding:14px 18px;
-    font-size:13px;
-    line-height:1.6;
-    color:var(--paper-dim);
-    margin-bottom:24px;
-  }
-  .callout a{color:var(--teal);}
-  .callout strong{color:var(--paper);}
-
   /* ============================================================
      RESPONSIVE — móvil
      ============================================================ */
@@ -399,9 +334,6 @@
     .wrap{padding:24px 16px 60px;}
 
     header.masthead{flex-direction:column;align-items:flex-start;gap:4px;padding-bottom:14px;margin-bottom:20px;}
-
-    .tabs{gap:2px;}
-    .tab-btn{font-size:12px;padding:12px 6px;letter-spacing:0.5px;}
 
     .config-grid{grid-template-columns:1fr;}
 
@@ -432,8 +364,6 @@
     .calendar-dow{font-size:9px;padding:2px 0;}
     .calendar-month h3{font-size:14px;}
 
-    .big-number{font-size:15vw;}
-
     .demo-banner{font-size:10px;padding:8px 10px;}
   }
 
@@ -441,7 +371,6 @@
     .ticket{grid-template-columns:64px 1fr;}
     .ticket-date .day{font-size:20px;}
     .ticket-name{font-size:15px;}
-    .bar-row{grid-template-columns:100px 1fr 50px;}
   }
 
   /* Zona táctil mínima en móvil para chips/botones */
@@ -463,6 +392,13 @@
   .app-footer p{margin:0 0 8px;}
   .app-footer a{color:var(--teal);text-decoration:none;border-bottom:1px solid transparent;}
   .app-footer a:hover{border-bottom-color:var(--teal);}
+  .version-tag{
+    margin-top:14px !important;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    opacity:0.5;
+    letter-spacing:0.5px;
+  }
 
   /* ============================================================
      TOASTS

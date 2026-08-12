@@ -1,6 +1,12 @@
 // ============================================================
-// FindShow — utilidades de UI compartidas: toasts y modal de detalle
-// Se cargan antes de app.js / demo.js. Exponen:
+// FindShow — ui.js
+// v1.0.0 — 12/08/26
+// ------------------------------------------------------------
+// CHANGELOG (últimas 3):
+// v1.0.0 (12/08/26) — Versión inicial: sistema de toasts + modal de detalle
+// ============================================================
+// Utilidades de UI compartidas, se cargan antes de app.js / demo.js.
+// Exponen:
 //   showToast(mensaje, tipo, duracionMs)   tipo: 'info' | 'success' | 'error'
 //   openModal(htmlInterno)
 //   closeModal()

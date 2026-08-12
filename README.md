@@ -3,8 +3,7 @@
 Busca conciertos reales en España (Ticketmaster) por artista, por ciudad, o ambos —
 sin necesidad de cuenta ni login. Conectar con Spotify es **opcional**: si lo haces,
 tus artistas seguidos aparecen como accesos rápidos de búsqueda. Incluye conciertos
-pasados con setlist completo (setlist.fm) y cálculo de minutos escuchados a partir
-del historial extendido de Spotify. 100% cliente, sin backend.
+pasados con setlist completo (setlist.fm). 100% cliente, sin backend.
 
 ## Funcionalidades
 
@@ -19,8 +18,6 @@ del historial extendido de Spotify. 100% cliente, sin backend.
 - Ordenar por Fecha / Artista / Distancia
 - Agrupar por Artista / Mes
 - Conciertos pasados con setlist completo, filtrable por año (setlist.fm)
-- Cálculo de minutos escuchados desde el historial extendido de Spotify
-  (procesado 100% en el navegador, nada se sube a ningún sitio)
 - Control de acceso opcional vía Google Sign-In (filtro blando, ver sección correspondiente)
 
 ## Estructura
@@ -150,12 +147,6 @@ en vez de fallar en silencio.
 Los datos de setlists son de [setlist.fm](https://www.setlist.fm/), enlazados desde cada ficha de
 detalle ("Ver en setlist.fm"). Sujeto también a sus términos de uso, no comercial.
 
-## Minutos escuchados
-
-Spotify no expone esto por API pública. Pide tu historial de streaming extendido
-desde [spotify.com/account/privacy](https://www.spotify.com/es/account/privacy/)
-(tarda hasta 30 días) y sube los `.json` resultantes en la pestaña correspondiente.
-
 ## Restringir acceso (Google Sign-In)
 
 `index.html` incluye una pantalla de acceso opcional con "Iniciar sesión con Google" que
@@ -240,24 +231,11 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
 
-### v1.0.0
-- Login Spotify (PKCE), artistas seguidos, búsqueda en Ticketmaster
-- Filtro geográfico por radio (Haversine) desde Cantabria
-- Vistas lista/calendario, orden y agrupación (fecha/artista/distancia)
-- Cálculo de minutos escuchados desde historial extendido (local, sin subir datos)
-- Separación en archivos css/js, estructura de proyecto
-- Chips de artista clicables como filtro rápido (multi-selección, combinable con el buscador)
-- Diseño responsive completo (móvil), transiciones de página/pestaña, llamadas paralelas y spinners
-- Footer con atribución a Ticketmaster Discovery API / Spotify Web API y aviso de privacidad
-- Toasts para feedback (conexión, resultados de búsqueda, errores, copiar enlace)
-- Modal de detalle al pinchar en un concierto (fecha completa, dirección, distancia, precio si está disponible)
-- Conciertos pasados con setlist completo y filtro por año (setlist.fm), con aviso claro de la limitación de CORS de esa API
-
-### v1.1.0
-- Rename del proyecto: GIRA → **FindShow**
-- PWA completa: `manifest.json`, iconos en todos los tamaños (incluida variante maskable),
-  favicon, capturas de pantalla, y service worker con caché de app shell (sin cachear nunca las APIs)
-- Lista para empaquetar como APK/AAB vía PWABuilder — ver sección "Convertir en APK"
+### v1.4.0
+- Eliminado "Minutos escuchados" (subida de historial extendido) — no aportaba al
+  propósito principal de la app
+- Quitadas las tabs: al quedar un único panel (Conciertos), el contenido va directo,
+  sin selector de pestañas
 
 ### v1.3.0
 - Eliminado el panel de configuración con campos de API keys visibles en pantalla
@@ -273,6 +251,24 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 - Pantalla de acceso opcional con Google Sign-In (filtro blando por lista de emails)
 - El nombre del artista en cada resultado ahora viene del propio evento de Ticketmaster
   (`_embedded.attractions`), no de la lista de seguidos — más preciso en búsquedas por ciudad
+
+### v1.1.0
+- Rename del proyecto: GIRA → **FindShow**
+- PWA completa: `manifest.json`, iconos en todos los tamaños (incluida variante maskable),
+  favicon, capturas de pantalla, y service worker con caché de app shell (sin cachear nunca las APIs)
+- Lista para empaquetar como APK/AAB vía PWABuilder — ver sección "Convertir en APK"
+
+### v1.0.0
+- Login Spotify (PKCE), artistas seguidos, búsqueda en Ticketmaster
+- Filtro geográfico por radio (Haversine) desde Cantabria
+- Vistas lista/calendario, orden y agrupación (fecha/artista/distancia)
+- Separación en archivos css/js, estructura de proyecto
+- Chips de artista clicables como filtro rápido (multi-selección, combinable con el buscador)
+- Diseño responsive completo (móvil), transiciones de página/pestaña, llamadas paralelas y spinners
+- Footer con atribución a Ticketmaster Discovery API / Spotify Web API y aviso de privacidad
+- Toasts para feedback (conexión, resultados de búsqueda, errores, copiar enlace)
+- Modal de detalle al pinchar en un concierto (fecha completa, dirección, distancia, precio si está disponible)
+- Conciertos pasados con setlist completo y filtro por año (setlist.fm), con aviso claro de la limitación de CORS de esa API
 
 ## Licencias y atribución de datos
 

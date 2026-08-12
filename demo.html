@@ -33,62 +33,45 @@
   <header class="masthead">
     <div>
       <div class="title">FindShow<span>.</span></div>
-      <div class="sub">artistas seguidos · conciertos en españa · minutos escuchados</div>
+      <div class="sub">artistas seguidos · conciertos en españa</div>
     </div>
   </header>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="conciertos">Conciertos</button>
-    <button class="tab-btn" data-tab="stats">Minutos escuchados</button>
+  <div class="status-line" id="statusConciertos">&gt; 6 artistas seguidos cargados (datos de prueba)</div>
+  <div class="artist-list" id="artistList"></div>
+
+  <div class="past-toggle-row">
+    <button class="btn secondary" id="btnTogglePasados">Ver conciertos pasados</button>
+    <select id="filtroAnio" class="select-control" style="display:none;">
+      <option value="">Todos los años</option>
+    </select>
   </div>
 
-  <!-- ===================== TAB CONCIERTOS ===================== -->
-  <div class="panel active" id="panel-conciertos">
-    <div class="status-line" id="statusConciertos">&gt; 6 artistas seguidos cargados (datos de prueba)</div>
-    <div class="artist-list" id="artistList"></div>
-
-    <div class="past-toggle-row">
-      <button class="btn secondary" id="btnTogglePasados">Ver conciertos pasados</button>
-      <select id="filtroAnio" class="select-control" style="display:none;">
-        <option value="">Todos los años</option>
-      </select>
-    </div>
-
-    <div class="radio-filter" id="radioFilterRow">
-      <label for="radioKm">Radio desde Santander, Cantabria</label>
-      <input type="range" id="radioKm" min="20" max="600" step="10" value="150">
-      <span class="radio-val" id="radioKmVal">150 km</span>
-    </div>
-
-    <div class="controls-row">
-      <input type="text" id="buscarArtista" class="search-input" placeholder="Buscar por artista...">
-      <select id="ordenarPor" class="select-control">
-        <option value="fecha">Ordenar: Fecha</option>
-        <option value="artista">Ordenar: Artista</option>
-        <option value="distancia">Ordenar: Distancia</option>
-      </select>
-      <select id="agruparPor" class="select-control">
-        <option value="ninguno">Sin agrupar</option>
-        <option value="artista">Agrupar: Artista</option>
-        <option value="mes">Agrupar: Mes</option>
-      </select>
-      <div class="view-toggle" id="viewToggleRow">
-        <button class="view-btn active" data-view="list">Lista</button>
-        <button class="view-btn" data-view="calendar">Calendario</button>
-      </div>
-    </div>
-
-    <div class="tickets" id="ticketResults"></div>
+  <div class="radio-filter" id="radioFilterRow">
+    <label for="radioKm">Radio desde Santander, Cantabria</label>
+    <input type="range" id="radioKm" min="20" max="600" step="10" value="150">
+    <span class="radio-val" id="radioKmVal">150 km</span>
   </div>
 
-  <!-- ===================== TAB STATS ===================== -->
-  <div class="panel" id="panel-stats">
-    <div class="callout">
-      <strong>Datos de prueba</strong> — así se vería tras subir tu historial de streaming extendido real
-      (ver conversación anterior sobre cómo pedirlo a Spotify).
+  <div class="controls-row">
+    <input type="text" id="buscarArtista" class="search-input" placeholder="Buscar por artista...">
+    <select id="ordenarPor" class="select-control">
+      <option value="fecha">Ordenar: Fecha</option>
+      <option value="artista">Ordenar: Artista</option>
+      <option value="distancia">Ordenar: Distancia</option>
+    </select>
+    <select id="agruparPor" class="select-control">
+      <option value="ninguno">Sin agrupar</option>
+      <option value="artista">Agrupar: Artista</option>
+      <option value="mes">Agrupar: Mes</option>
+    </select>
+    <div class="view-toggle" id="viewToggleRow">
+      <button class="view-btn active" data-view="list">Lista</button>
+      <button class="view-btn" data-view="calendar">Calendario</button>
     </div>
-    <div id="statsResults"></div>
   </div>
+
+  <div class="tickets" id="ticketResults"></div>
 
   <footer class="app-footer">
     <p>
@@ -99,6 +82,7 @@
       <a href="https://developer.spotify.com/documentation/web-api" target="_blank" rel="noopener">Spotify Web API</a>.
       Proyecto personal, no comercial, sin afiliación con Ticketmaster/Live Nation ni con Spotify.
     </p>
+    <p class="version-tag">FindShow v1.4.0 (demo)</p>
   </footer>
 
 </div>

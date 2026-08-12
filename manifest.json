@@ -1,7 +1,7 @@
 {
   "name": "FindShow — conciertos y setlists",
   "short_name": "FindShow",
-  "description": "Cruza tus artistas seguidos en Spotify con conciertos reales en España, filtrados por distancia. Incluye conciertos pasados con setlist y minutos escuchados.",
+  "description": "Busca conciertos reales en España por artista o ciudad, sin login. Conecta Spotify (opcional) para accesos rápidos a tus artistas seguidos. Incluye conciertos pasados con setlist.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

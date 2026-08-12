@@ -1,27 +1,16 @@
 // ============================================================
-// FindShow — demo con datos de prueba (sin llamadas reales a APIs)
+// FindShow — demo.js
+// v1.2.0 — 12/08/26
+// ------------------------------------------------------------
+// CHANGELOG (últimas 3):
+// v1.2.0 (12/08/26) — Eliminado "Minutos escuchados" y las tabs (un solo
+//                      panel de conciertos, siempre visible)
+// v1.1.0 (12/08/26) — Conciertos pasados con setlist expandible y filtro
+//                      por año (datos mock); toasts; modal de detalle
+// v1.0.1 (12/08/26) — Chips clicables como filtro (multi-selección)
 // ============================================================
-
-// ---- Tabs (con transición de entrada) ----
-function activarPanel(tabName) {
-  document.querySelectorAll('.panel').forEach(function(p) {
-    p.classList.remove('active', 'show');
-  });
-  var target = document.getElementById('panel-' + tabName);
-  target.classList.add('active');
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() { target.classList.add('show'); });
-  });
-}
-
-document.querySelectorAll('.tab-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    activarPanel(btn.dataset.tab);
-  });
-});
-activarPanel('conciertos');
+// Demo con datos de prueba (sin llamadas reales a APIs)
+// ============================================================
 
 // ---- Datos de prueba: artistas seguidos ----
 var artistasSeguidos = ['Sôber', 'Boikot', 'Reincidentes', 'Ska-P', 'Extremoduro', 'Def Con Dos'];
@@ -503,35 +492,4 @@ function mostrarDetalleSetlistDemo(item) {
   openModal(html);
 }
 
-// ---- Datos de prueba: minutos escuchados ----
-var statsDemo = {
-  totalHoras: 842.3,
-  totalDias: 35.1,
-  ranking: [
-    { nombre: 'Sôber',        horas: 96.4 },
-    { nombre: 'Extremoduro',  horas: 88.1 },
-    { nombre: 'Boikot',       horas: 71.9 },
-    { nombre: 'Ska-P',        horas: 64.2 },
-    { nombre: 'Reincidentes', horas: 52.7 },
-    { nombre: 'Def Con Dos',  horas: 41.5 },
-    { nombre: 'Marea',        horas: 38.0 },
-    { nombre: 'Rise Against', horas: 29.6 }
-  ]
-};
 
-(function renderStatsDemo() {
-  var maxHoras = statsDemo.ranking[0].horas;
-  var html = '<div class="big-number">' + statsDemo.totalHoras +
-    '<small>horas totales escuchadas &middot; ' + statsDemo.totalDias + ' días</small></div>';
-  html += '<div style="margin-top:32px;">';
-  statsDemo.ranking.forEach(function(r) {
-    var pct = Math.max(4, (r.horas / maxHoras) * 100);
-    html += '<div class="bar-row">' +
-      '<div class="bar-name">' + r.nombre + '</div>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="bar-val">' + r.horas + 'h</div>' +
-      '</div>';
-  });
-  html += '</div>';
-  document.getElementById('statsResults').innerHTML = html;
-})();
