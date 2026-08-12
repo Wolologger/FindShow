@@ -1,22 +1,27 @@
 # FindShow
 
-Cruza tus artistas seguidos en Spotify con conciertos reales en España (Ticketmaster),
-filtrados por distancia geográfica desde Cantabria. Incluye cálculo de minutos
-escuchados a partir del historial extendido de Spotify. 100% cliente, sin backend.
+Busca conciertos reales en España (Ticketmaster) por artista, por ciudad, o ambos —
+sin necesidad de cuenta ni login. Conectar con Spotify es **opcional**: si lo haces,
+tus artistas seguidos aparecen como accesos rápidos de búsqueda. Incluye conciertos
+pasados con setlist completo (setlist.fm) y cálculo de minutos escuchados a partir
+del historial extendido de Spotify. 100% cliente, sin backend.
 
 ## Funcionalidades
 
-- Login con Spotify (OAuth 2.0 Authorization Code + PKCE, sin client secret)
-- Lectura de artistas seguidos (`GET /me/following?type=artist`)
-- Búsqueda de conciertos vía Ticketmaster Discovery API (`countryCode=ES`)
+- **Búsqueda directa por artista y/o ciudad, sin login** — la función principal.
+  Sin ciudad, filtra por radio desde Cantabria; con ciudad, busca ahí sin límite de distancia.
+- **Caché client-side** de las búsquedas (20 minutos): repetir una búsqueda no repite
+  la llamada a Ticketmaster, más rápido y ahorra cuota de API.
+- Login con Spotify **opcional** (OAuth 2.0 Authorization Code + PKCE, sin client secret) —
+  añade tus artistas seguidos como chips de acceso rápido y una búsqueda bulk de todos ellos
 - Filtro geográfico por radio (fórmula de Haversine) desde Santander
-- Buscador por nombre de artista
 - Vistas Lista / Calendario
 - Ordenar por Fecha / Artista / Distancia
 - Agrupar por Artista / Mes
 - Conciertos pasados con setlist completo, filtrable por año (setlist.fm)
 - Cálculo de minutos escuchados desde el historial extendido de Spotify
   (procesado 100% en el navegador, nada se sube a ningún sitio)
+- Control de acceso opcional vía Google Sign-In (filtro blando, ver sección correspondiente)
 
 ## Estructura
 
@@ -31,7 +36,7 @@ findshow/
 │   └── styles.css   # compartido por ambas páginas
 ├── js/
 │   ├── ui.js          # toasts + modal de detalle, compartido
-│   ├── app.js        # lógica de index.html (OAuth, fetch, render)
+│   ├── app.js        # lógica de index.html (OAuth, fetch, render, caché)
 │   └── demo.js         # lógica de demo.html (datos mock, render)
 ├── icons/            # icono en todos los tamaños PWA + variante maskable
 ├── screenshots/       # capturas para el listado de instalación
@@ -47,19 +52,29 @@ sin necesidad de credenciales ni servidor.
 
 ## Uso real
 
-1. Crea una app en [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
-   Desde febrero de 2026 hace falta cuenta Spotify **Premium** para registrar apps.
-   Activa el scope `user-follow-read` y marca solo **Web API**.
-2. Consigue una API key gratuita en [developer.ticketmaster.com](https://developer.ticketmaster.com).
-3. Sirve el proyecto por HTTP — no funciona con `file://`:
+**Lo mínimo para buscar conciertos** (sin Spotify):
+
+1. Consigue una API key gratuita en [developer.ticketmaster.com](https://developer.ticketmaster.com).
+2. Sirve el proyecto por HTTP — no funciona con `file://`:
    ```bash
    python3 -m http.server 8080
    ```
-4. Registra en el dashboard de Spotify, como Redirect URI, la misma URL exacta
-   donde sirvas `index.html`. Desde 2025 Spotify exige loopback explícito:
-   `http://127.0.0.1:8080/index.html` — `localhost` ya no está permitido.
-5. Abre esa URL, pega tus credenciales en el panel de configuración desplegable
-   y pulsa "Conectar con Spotify".
+   (o publícalo en GitHub Pages / cualquier hosting HTTPS, como ya tienes con
+   `wolologger.github.io/FindShow`)
+3. Abre `index.html`, despliega "▾ configuración", pega la API key de Ticketmaster.
+4. Escribe un artista, una ciudad, o ambos, y pulsa **Buscar**.
+
+**Para añadir accesos rápidos a tus artistas seguidos** (opcional):
+
+5. Crea una app en [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+   Desde febrero de 2026 hace falta cuenta Spotify **Premium** para registrar apps.
+   Activa el scope `user-follow-read` y marca solo **Web API**.
+6. Registra en el dashboard de Spotify, como Redirect URI, la misma URL exacta
+   donde sirvas `index.html`. Desde 2025 Spotify exige loopback explícito en local
+   (`http://127.0.0.1:8080/index.html`, `localhost` ya no vale) o HTTPS en producción.
+7. Pega el Client ID en el panel de configuración y pulsa "Conectar con Spotify"
+   (dentro del desplegable "Conectar con Spotify (opcional)").
+
 
 ## Conciertos pasados (setlist.fm)
 
@@ -124,6 +139,48 @@ Spotify no expone esto por API pública. Pide tu historial de streaming extendid
 desde [spotify.com/account/privacy](https://www.spotify.com/es/account/privacy/)
 (tarda hasta 30 días) y sube los `.json` resultantes en la pestaña correspondiente.
 
+## Restringir acceso (Google Sign-In)
+
+`index.html` incluye una pantalla de acceso opcional con "Iniciar sesión con Google" que
+solo deja pasar a los emails que tú decidas. **Por defecto está desactivada** (deja pasar
+a cualquiera) hasta que configures la lista de emails.
+
+⚠️ **Es un filtro blando, no seguridad real.** Como no hay servidor, el email se lee del
+token de Google sin verificar su firma — eso requeriría un backend. Sirve como disuasorio
+para uso personal/familiar, no como barrera de seguridad de verdad. Si alguna vez necesitas
+seguridad real, la solución sería verificar el JWT server-side (una Azure Function, por
+ejemplo), igual que con el proxy de setlist.fm.
+
+### Configuración
+
+1. Ve a [console.cloud.google.com](https://console.cloud.google.com) → crea un proyecto
+   (o usa uno existente) → **APIs & Services → OAuth consent screen** (tipo "External",
+   modo "Testing" es suficiente para uso personal, no hace falta publicarla).
+2. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → tipo
+   **Web application**.
+3. En **Authorized JavaScript origins**, añade el dominio donde publiques la app, por ejemplo:
+   ```
+   https://wolologger.github.io
+   http://127.0.0.1:8080
+   ```
+   (para pruebas en local). No hace falta configurar Redirect URIs — el botón de Google
+   usa un flujo distinto al de Spotify (postMessage/FedCM, no redirect de página completa).
+4. Copia el **Client ID** y pégalo en `js/app.js`, al principio del archivo:
+   ```javascript
+   var GOOGLE_CLIENT_ID = 'TU_CLIENT_ID.apps.googleusercontent.com';
+   ```
+5. Añade los emails permitidos, justo debajo:
+   ```javascript
+   var EMAILS_PERMITIDOS = [
+     'tu-email@gmail.com',
+     'otra-persona@gmail.com'
+   ];
+   ```
+6. Sube los cambios. La próxima vez que alguien entre en `index.html`, verá la pantalla
+   de acceso hasta iniciar sesión con un email de esa lista.
+
+`demo.html` no lleva esta pantalla — no tiene coste ni datos reales, así que se deja abierta.
+
 ## Convertir en APK (PWABuilder)
 
 El proyecto ya lleva todo lo necesario para ser una PWA instalable: `manifest.json`, iconos en
@@ -184,6 +241,15 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 - PWA completa: `manifest.json`, iconos en todos los tamaños (incluida variante maskable),
   favicon, capturas de pantalla, y service worker con caché de app shell (sin cachear nunca las APIs)
 - Lista para empaquetar como APK/AAB vía PWABuilder — ver sección "Convertir en APK"
+
+### v1.2.0
+- **Cambio de arquitectura**: la búsqueda directa por artista y/o ciudad pasa a ser la
+  acción principal, sin necesitar Spotify. Spotify pasa a ser un extra opcional
+  (accesos rápidos + búsqueda bulk de artistas seguidos)
+- Caché client-side de búsquedas en Ticketmaster (20 min) — evita repetir llamadas idénticas
+- Pantalla de acceso opcional con Google Sign-In (filtro blando por lista de emails)
+- El nombre del artista en cada resultado ahora viene del propio evento de Ticketmaster
+  (`_embedded.attractions`), no de la lista de seguidos — más preciso en búsquedas por ciudad
 
 ## Licencias y atribución de datos
 

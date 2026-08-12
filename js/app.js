@@ -22,6 +22,108 @@ var store = {
   }
 };
 
+// ============================================================
+// CONTROL DE ACCESO (Google Sign-In)
+// ⚠️ IMPORTANTE: esto es un filtro blando, no seguridad real.
+// Como no hay servidor, el email se lee del JWT que devuelve Google
+// SIN verificar su firma (verificarla requiere un backend). Cualquiera
+// con DevTools podría, en teoría, saltárselo. Vale como disuasorio
+// para uso personal/familiar, no como barrera de seguridad.
+// Edita estas dos constantes para configurar tu acceso — ver README,
+// sección "Restringir acceso (Google Sign-In)".
+// ============================================================
+var GOOGLE_CLIENT_ID = 'TU_CLIENT_ID.apps.googleusercontent.com';
+var EMAILS_PERMITIDOS = [
+  // 'tu-email@gmail.com',
+];
+
+function decodeJwtPayload(token) {
+  var base64Url = token.split('.')[1];
+  var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  var jsonPayload = decodeURIComponent(
+    atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('')
+  );
+  return JSON.parse(jsonPayload);
+}
+
+function handleGoogleCredential(response) {
+  var payload;
+  try { payload = decodeJwtPayload(response.credential); }
+  catch (e) { showToast('No se pudo leer la respuesta de Google', 'error'); return; }
+
+  var email = (payload.email || '').toLowerCase();
+
+  if (payload.email_verified && EMAILS_PERMITIDOS.indexOf(email) !== -1) {
+    store.set('gate_email', email);
+    ocultarGate();
+    showToast('Acceso concedido — hola, ' + (payload.given_name || email), 'success');
+  } else {
+    showToast('Este email no tiene acceso a FindShow', 'error');
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+  }
+}
+
+function mostrarGate() {
+  document.getElementById('accessGate').style.display = 'flex';
+  document.getElementById('appContent').style.display = 'none';
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('googleSignInBtn'),
+    { theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'rectangular' }
+  );
+}
+
+function ocultarGate() {
+  document.getElementById('accessGate').style.display = 'none';
+  document.getElementById('appContent').style.display = 'block';
+}
+
+function esperarGoogleSDK(intento) {
+  intento = intento || 0;
+  if (window.google && google.accounts && google.accounts.id) {
+    inicializarGate();
+  } else if (intento < 40) {
+    setTimeout(function() { esperarGoogleSDK(intento + 1); }, 100);
+  } else {
+    document.getElementById('accessGate').innerHTML =
+      '<div class="access-gate-card"><p class="access-gate-msg">No se pudo cargar el inicio de sesión de Google. ' +
+      'Comprueba tu conexión a internet y recarga la página.</p></div>';
+    document.getElementById('accessGate').style.display = 'flex';
+  }
+}
+
+async function inicializarGate() {
+  if (EMAILS_PERMITIDOS.length === 0) {
+    // sin lista configurada: no restringe nada, deja pasar directamente
+    ocultarGate();
+    return;
+  }
+  var emailGuardado = await store.get('gate_email');
+  if (emailGuardado && EMAILS_PERMITIDOS.indexOf(emailGuardado) !== -1) {
+    ocultarGate();
+    return;
+  }
+  mostrarGate();
+}
+
+var btnCerrarSesionGate = document.getElementById('btnCerrarSesionGate');
+if (btnCerrarSesionGate) {
+  btnCerrarSesionGate.addEventListener('click', async function() {
+    await store.set('gate_email', '');
+    window.location.reload();
+  });
+}
+
+esperarGoogleSDK();
+
 // ---- Tabs (con transición de entrada) ----
 function activarPanel(tabName) {
   document.querySelectorAll('.panel').forEach(function(p) {
@@ -189,11 +291,9 @@ async function enParalelo(items, concurrencia, fn) {
 
 // ---- Artistas seguidos ----
 var artistasSeguidos = [];
-var artistasSeleccionados = new Set();
 
 async function cargarArtistasSeguidos() {
   artistasSeguidos = [];
-  artistasSeleccionados.clear();
   setStatus('cargando artistas seguidos...', true);
   var url = 'https://api.spotify.com/v1/me/following?type=artist&limit=50';
 
@@ -218,25 +318,22 @@ function renderArtistList() {
     chip.className = 'chip';
     chip.textContent = name;
     chip.addEventListener('click', function() {
-      if (artistasSeleccionados.has(name)) {
-        artistasSeleccionados.delete(name);
-        chip.classList.remove('active');
-      } else {
-        artistasSeleccionados.add(name);
-        chip.classList.add('active');
-      }
+      document.querySelectorAll('#artistList .chip').forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      document.getElementById('artistaQuery').value = name;
+
       if (typeof modoPasados !== 'undefined' && modoPasados) {
         buscarSetlists();
       } else {
-        renderResultados();
+        buscarLibre(name, document.getElementById('ciudadQuery').value.trim());
       }
     });
     container.appendChild(chip);
   });
 }
 
-// ---- Ticketmaster ----
-document.getElementById('btnBuscarConciertos').addEventListener('click', buscarConciertos);
+// ---- Ticketmaster: búsqueda bulk de todos los artistas seguidos (opcional, requiere Spotify) ----
+document.getElementById('btnBuscarConciertos').addEventListener('click', buscarTodosLosSeguidos);
 
 var ultimosResultados = [];
 var currentView = 'list';
@@ -256,7 +353,25 @@ function distanciaKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-async function buscarConciertos() {
+// ---- Caché de búsquedas (evita repetir llamadas idénticas a Ticketmaster) ----
+var CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutos
+
+async function leerCache(key) {
+  try {
+    var raw = await store.get(key);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+    return parsed.data;
+  } catch (e) { return null; }
+}
+
+async function guardarCache(key, data) {
+  try { await store.set(key, JSON.stringify({ ts: Date.now(), data: data })); }
+  catch (e) { /* si falla el guardado, no pasa nada, simplemente no cachea esta vez */ }
+}
+
+async function buscarTodosLosSeguidos() {
   var apiKey = document.getElementById('tmApiKey').value.trim();
   var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
   if (!apiKey) { showToast('Falta la API Key de Ticketmaster (panel de configuración)', 'error'); return; }
@@ -304,9 +419,97 @@ async function buscarConciertos() {
   renderResultados();
 
   if (todosLosEventos.length > 0) {
-    showToast(todosLosEventos.length + ' conciertos encontrados dentro de ' + radio + ' km de Cantabria', 'success');
+    showToast(todosLosEventos.length + (todosLosEventos.length === 1 ? ' concierto encontrado' : ' conciertos encontrados') + ' dentro de ' + radio + ' km de Cantabria', 'success');
   } else {
     showToast('Ningún concierto encontrado en ese radio. Prueba a ampliarlo.', 'info');
+  }
+}
+
+// ---- Búsqueda directa por artista y/o ciudad (NO requiere Spotify) ----
+document.getElementById('btnBuscarLibre').addEventListener('click', function() {
+  ejecutarBusquedaPrincipal();
+});
+['artistaQuery', 'ciudadQuery'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') ejecutarBusquedaPrincipal();
+  });
+});
+
+function ejecutarBusquedaPrincipal() {
+  if (typeof modoPasados !== 'undefined' && modoPasados) {
+    buscarSetlists();
+  } else {
+    var artista = document.getElementById('artistaQuery').value.trim();
+    var ciudad = document.getElementById('ciudadQuery').value.trim();
+    buscarLibre(artista, ciudad);
+  }
+}
+
+async function buscarLibre(artista, ciudad) {
+  var apiKey = document.getElementById('tmApiKey').value.trim();
+  var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
+  if (!apiKey) { showToast('Falta la API Key de Ticketmaster (panel de configuración)', 'error'); return; }
+  if (!artista && !ciudad) { showToast('Escribe un artista, una ciudad, o ambos', 'info'); return; }
+
+  var cacheKey = 'tm_' + artista.toLowerCase() + '|' + ciudad.toLowerCase() + '|' + (ciudad ? 'sin-radio' : radio);
+  var enCache = await leerCache(cacheKey);
+  if (enCache) {
+    ultimosResultados = enCache;
+    renderResultados();
+    showToast(enCache.length + (enCache.length === 1 ? ' concierto' : ' conciertos') + ' (desde caché)', 'info');
+    return;
+  }
+
+  setBtnLoading(document.getElementById('btnBuscarLibre'), true);
+  mostrarSkeletons(3);
+  setStatus('buscando en Ticketmaster...', true);
+
+  var url = 'https://app.ticketmaster.com/discovery/v2/events.json'
+    + '?countryCode=ES&classificationName=music&sort=date,asc&size=30&apikey=' + apiKey;
+  if (artista) url += '&keyword=' + encodeURIComponent(artista);
+  if (ciudad) url += '&city=' + encodeURIComponent(ciudad);
+
+  var eventos = [];
+
+  try {
+    var resp = await fetch(url);
+    if (resp.ok) {
+      var data = await resp.json();
+      if (data._embedded && data._embedded.events) {
+        data._embedded.events.forEach(function(ev) {
+          var venue = ev._embedded && ev._embedded.venues && ev._embedded.venues[0];
+          var loc = venue && venue.location;
+          var dist = null;
+          if (loc && loc.latitude && loc.longitude) {
+            dist = distanciaKm(CENTRO_LAT, CENTRO_LON, parseFloat(loc.latitude), parseFloat(loc.longitude));
+          }
+          // Sin ciudad especificada: filtra por radio (solo si hay coordenadas para comprobarlo).
+          // Con ciudad especificada: no se filtra por distancia, la ciudad ya acota la búsqueda.
+          if (!ciudad) {
+            if (dist === null || dist > radio) return;
+          }
+          var nombreArtista = (ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0])
+            ? ev._embedded.attractions[0].name
+            : (artista || ev.name);
+          eventos.push({ artista: nombreArtista, ev: ev, venue: venue, dist: dist });
+        });
+      }
+    } else {
+      showToast('Ticketmaster devolvió un error (' + resp.status + '). Revisa la API key.', 'error');
+    }
+  } catch (e) {
+    showToast('No se pudo contactar con Ticketmaster', 'error');
+  }
+
+  setBtnLoading(document.getElementById('btnBuscarLibre'), false);
+  ultimosResultados = eventos;
+  guardarCache(cacheKey, eventos);
+  renderResultados();
+
+  if (eventos.length > 0) {
+    showToast(eventos.length + (eventos.length === 1 ? ' concierto encontrado' : ' conciertos encontrados'), 'success');
+  } else {
+    showToast('Sin resultados. Prueba con otro artista, otra ciudad, o amplía el radio.', 'info');
   }
 }
 
@@ -324,7 +527,11 @@ function ordenar(items, sortBy) {
   var copia = items.slice();
   copia.sort(function(a, b) {
     if (sortBy === 'artista') return getArtista(a).localeCompare(getArtista(b));
-    if (sortBy === 'distancia') return getDist(a) - getDist(b);
+    if (sortBy === 'distancia') {
+      var da = getDist(a) === null ? Infinity : getDist(a);
+      var db = getDist(b) === null ? Infinity : getDist(b);
+      return da - db;
+    }
     return getFecha(a) - getFecha(b);
   });
   return copia;
@@ -343,7 +550,8 @@ function renderTicket(item) {
     '<div class="ticket-body">' +
       '<div class="ticket-artist">' + item.artista + '</div>' +
       '<p class="ticket-name">' + item.ev.name + '</p>' +
-      '<p class="ticket-venue">' + getVenueTxt(item) + '<span class="ticket-dist">' + Math.round(item.dist) + ' km</span></p>' +
+      '<p class="ticket-venue">' + getVenueTxt(item) +
+        (item.dist !== null ? '<span class="ticket-dist">' + Math.round(item.dist) + ' km</span>' : '') + '</p>' +
       '<a class="ticket-link" href="' + item.ev.url + '" target="_blank">ver entradas &rarr;</a>' +
     '</div>';
 
@@ -384,7 +592,7 @@ function mostrarDetalleConcierto(item) {
       '<div class="modal-row"><span class="label">Fecha</span><span class="value">' + fechaLarga + (hora ? ' · ' + hora : '') + '</span></div>' +
       '<div class="modal-row"><span class="label">Lugar</span><span class="value">' + lugarTxt +
         (direccion ? '<br>' + direccion : '') + (ciudadTxt ? '<br>' + ciudadTxt : '') + '</span></div>' +
-      '<div class="modal-row"><span class="label">Distancia</span><span class="value">' + Math.round(item.dist) + ' km desde Santander</span></div>' +
+      (item.dist !== null ? '<div class="modal-row"><span class="label">Distancia</span><span class="value">' + Math.round(item.dist) + ' km desde Santander</span></div>' : '') +
       (precioTxt ? '<div class="modal-row"><span class="label">Precio</span><span class="value">' + precioTxt + '</span></div>' : '') +
       '<div class="modal-actions">' +
         '<a class="btn" href="' + item.ev.url + '" target="_blank">Ver entradas</a>' +
@@ -536,8 +744,7 @@ function renderResultados() {
   var groupBy = document.getElementById('agruparPor').value;
 
   var filtrados = ultimosResultados
-    .filter(function(item) { return !searchTerm || item.artista.toLowerCase().indexOf(searchTerm) !== -1; })
-    .filter(function(item) { return artistasSeleccionados.size === 0 || artistasSeleccionados.has(item.artista); });
+    .filter(function(item) { return !searchTerm || item.artista.toLowerCase().indexOf(searchTerm) !== -1; });
 
   if (currentView === 'list') {
     renderListView(filtrados, sortBy, groupBy);
@@ -546,8 +753,7 @@ function renderResultados() {
     renderCalendarView(filtrados);
   }
 
-  var filtroChips = artistasSeleccionados.size > 0 ? ' · filtrado a ' + artistasSeleccionados.size + ' artista(s)' : '';
-  setStatus(filtrados.length + ' eventos' + (searchTerm ? ' que coinciden con "' + searchTerm + '"' : '') + filtroChips + ' dentro de ' + radio + ' km de Santander');
+  setStatus(filtrados.length + ' eventos' + (searchTerm ? ' que coinciden con "' + searchTerm + '"' : '') + ' · radio ' + radio + ' km');
 }
 
 document.getElementById('buscarArtista').addEventListener('input', function() {
@@ -619,39 +825,49 @@ function parseFechaSetlist(fechaDDMMYYYY) {
 
 async function buscarSetlists() {
   var apiKey = document.getElementById('setlistApiKey').value.trim();
+  var artista = document.getElementById('artistaQuery').value.trim();
   if (!apiKey) { showToast('Falta la API Key de setlist.fm (panel de configuración)', 'error'); return; }
-  if (artistasSeleccionados.size === 0) {
-    showToast('Selecciona uno o más artistas arriba (chips) para ver su historial', 'info');
+  if (!artista) {
+    showToast('Escribe un artista arriba (o pulsa un chip) para ver su historial', 'info');
+    document.getElementById('ticketResults').innerHTML = '<div class="empty">Escribe el nombre de un artista en el buscador de arriba para ver su historial de conciertos.</div>';
+    setStatus('');
     return;
   }
 
   var proxyUrl = document.getElementById('corsProxyUrl').value.trim();
-  var artistas = Array.from(artistasSeleccionados);
+  var cacheKey = 'sfm_' + artista.toLowerCase();
 
-  mostrarSkeletons(Math.min(3, artistas.length));
+  var enCache = await leerCache(cacheKey);
+  if (enCache) {
+    ultimosSetlists = enCache;
+    poblarFiltroAnios(enCache);
+    renderSetlists();
+    showToast(enCache.length + (enCache.length === 1 ? ' concierto pasado' : ' conciertos pasados') + ' (desde caché)', 'info');
+    return;
+  }
+
+  mostrarSkeletons(3);
   setStatus('buscando conciertos pasados...', true);
+
+  var base = 'https://api.setlist.fm/rest/1.0/search/setlists?artistName=' + encodeURIComponent(artista) + '&p=1';
+  var url = proxyUrl ? proxyUrl + encodeURIComponent(base) : base;
 
   var todos = [];
   var falloCors = false;
 
-  await enParalelo(artistas, 3, async function(artista) {
-    var base = 'https://api.setlist.fm/rest/1.0/search/setlists?artistName=' + encodeURIComponent(artista) + '&p=1';
-    var url = proxyUrl ? proxyUrl + encodeURIComponent(base) : base;
-
-    try {
-      var resp = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'x-api-key': apiKey }
+  try {
+    var resp = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'x-api-key': apiKey }
+    });
+    if (resp.ok) {
+      var data = await resp.json();
+      (data.setlist || []).forEach(function(sl) {
+        todos.push({ artista: artista, sl: sl });
       });
-      if (resp.ok) {
-        var data = await resp.json();
-        (data.setlist || []).forEach(function(sl) {
-          todos.push({ artista: artista, sl: sl });
-        });
-      }
-    } catch (e) {
-      falloCors = true; // fetch rechazado por CORS u otro error de red
     }
-  });
+  } catch (e) {
+    falloCors = true; // fetch rechazado por CORS u otro error de red
+  }
 
   ultimosSetlists = todos;
 
@@ -663,11 +879,14 @@ async function buscarSetlists() {
     return;
   }
 
+  guardarCache(cacheKey, todos);
   poblarFiltroAnios(todos);
   renderSetlists();
 
   if (todos.length > 0) {
-    showToast(todos.length + ' conciertos pasados encontrados', 'success');
+    showToast(todos.length + (todos.length === 1 ? ' concierto pasado encontrado' : ' conciertos pasados encontrados'), 'success');
+  } else {
+    showToast('Sin conciertos pasados encontrados para "' + artista + '"', 'info');
   }
 }
 

@@ -19,10 +19,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<script src="https://accounts.google.com/gsi/client?hl=es" async defer></script>
 </head>
 <body>
 
-<div class="wrap">
+<div class="access-gate" id="accessGate">
+  <div class="access-gate-card">
+    <div class="title" style="font-size:clamp(28px,8vw,44px);">FindShow<span>.</span></div>
+    <p class="access-gate-msg">
+      Acceso restringido. Inicia sesión con una cuenta de Google autorizada para continuar.
+    </p>
+    <div id="googleSignInBtn"></div>
+  </div>
+</div>
+
+<div class="wrap" id="appContent" style="display:none;">
 
   <nav class="page-nav">
     <a href="demo.html" class="page-nav-link">Demo</a>
@@ -84,12 +95,33 @@
       </div>
     </details>
 
-    <button class="btn" id="btnSpotifyLogin">Conectar con Spotify</button>
-    <button class="btn secondary" id="btnBuscarConciertos" style="display:none;margin-left:10px;">Buscar conciertos en España</button>
+    <div class="search-panel">
+      <div class="search-fields">
+        <input type="text" id="artistaQuery" class="search-input" placeholder="Artista (ej. Sôber)">
+        <input type="text" id="ciudadQuery" class="search-input" placeholder="Ciudad (ej. Madrid) — opcional">
+        <button class="btn" id="btnBuscarLibre">Buscar</button>
+      </div>
+      <p class="hint" style="margin-top:10px;">
+        Escribe un artista, una ciudad, o ambos. Si dejas la ciudad vacía, se filtra por el radio
+        desde Cantabria del panel de configuración de arriba; si pones una ciudad, se busca ahí
+        directamente sin límite de distancia.
+      </p>
+    </div>
+
+    <details class="config" style="margin-top:16px;">
+      <summary>&gt; Conectar con Spotify (opcional) — accesos rápidos a tus artistas seguidos</summary>
+      <p class="hint" style="margin-top:12px;">
+        No hace falta para buscar — la búsqueda de arriba funciona sola con la key de Ticketmaster.
+        Conectar Spotify solo añade tus artistas seguidos como chips de acceso rápido, y una opción
+        para buscarlos todos de golpe.
+      </p>
+      <button class="btn secondary" id="btnSpotifyLogin" style="margin-top:12px;">Conectar con Spotify</button>
+      <button class="btn secondary" id="btnBuscarConciertos" style="display:none;margin-top:12px;margin-left:10px;">Buscar todos mis artistas seguidos</button>
+      <div class="artist-list" id="artistList" style="margin-top:14px;"></div>
+    </details>
 
     <div class="status-line" id="statusConciertos"></div>
     <div class="progress-bar" id="progressBar"><div class="progress-bar-fill" id="progressBarFill"></div></div>
-    <div class="artist-list" id="artistList"></div>
 
     <div class="past-toggle-row">
       <button class="btn secondary" id="btnTogglePasados">Ver conciertos pasados</button>
@@ -105,7 +137,7 @@
     </div>
 
     <div class="controls-row" id="controlsRow">
-      <input type="text" id="buscarArtista" class="search-input" placeholder="Buscar por artista...">
+      <input type="text" id="buscarArtista" class="search-input" placeholder="Filtrar resultados por artista...">
       <select id="ordenarPor" class="select-control">
         <option value="fecha">Ordenar: Fecha</option>
         <option value="artista">Ordenar: Artista</option>
@@ -161,6 +193,7 @@
       salvo a Spotify/Ticketmaster para hacer las consultas correspondientes) y no se almacenan
       ni transmiten a ningún servidor propio. No se usan cookies de seguimiento ni analítica.
     </p>
+    <p><button class="gate-logout" id="btnCerrarSesionGate">Cerrar sesión de Google</button></p>
   </footer>
 
 </div>

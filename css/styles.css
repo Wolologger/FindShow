@@ -629,3 +629,69 @@
     .past-toggle-row{flex-direction:column;align-items:stretch;}
     .past-toggle-row .btn, .past-toggle-row select{width:100%;}
   }
+
+  /* ============================================================
+     PANTALLA DE ACCESO (Google Sign-In)
+     ============================================================ */
+  .access-gate{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:var(--ink);
+    z-index:2000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .access-gate-card{
+    max-width:380px;
+    width:100%;
+    text-align:center;
+  }
+  .access-gate-card .title{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    line-height:0.9;
+    color:var(--paper);
+  }
+  .access-gate-card .title span{color:var(--accent);}
+  .access-gate-msg{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    margin:20px 0 28px;
+  }
+  #googleSignInBtn{
+    display:flex;
+    justify-content:center;
+    min-height:44px;
+  }
+  .gate-logout{
+    background:none;border:none;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--paper-dim);text-decoration:none;
+    border-bottom:1px dashed var(--paper-dim);
+    cursor:pointer;padding:0;
+  }
+  .gate-logout:hover{color:var(--paper);border-color:var(--paper);}
+
+  /* ============================================================
+     BÚSQUEDA DIRECTA (artista / ciudad, sin necesitar Spotify)
+     ============================================================ */
+  .search-panel{
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:18px;
+    margin-bottom:6px;
+  }
+  .search-fields{display:flex;gap:10px;flex-wrap:wrap;}
+  .search-fields .search-input{flex:1;min-width:160px;}
+  .search-fields .btn{flex-shrink:0;}
+  @media (max-width:640px){
+    .search-panel{padding:14px;}
+    .search-fields{flex-direction:column;}
+    .search-fields .btn{width:100%;}
+  }
