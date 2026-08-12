@@ -131,6 +131,19 @@
 <script src="js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
+    var yaRecargando = false;
+
+    // controllerchange solo dispara cuando un SW nuevo TOMA EL CONTROL
+    // sustituyendo a uno anterior — nunca en la primera instalación.
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (yaRecargando) return;
+      yaRecargando = true;
+      if (typeof showToast === 'function') {
+        showToast('Nueva versión cargada, actualizando...', 'info', 1500);
+      }
+      setTimeout(function() { window.location.reload(); }, 600);
+    });
+
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('sw.js').catch(function() {
         // si falla (p.ej. abierto en file://), la app sigue funcionando igual, solo sin caché offline

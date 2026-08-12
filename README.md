@@ -231,6 +231,24 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
 
+### v1.5.0 — fix importante
+- **Bug real corregido**: `sw.js` tenía una condición de carrera al clonar la `Response`
+  (`cache.put(..., networkResponse.clone())`) que podía lanzar
+  `"Failed to execute 'clone' on 'Response': Response body is already used"` y dejaba
+  la caché sin actualizar nunca. Resultado: el navegador seguía sirviendo un `app.js`
+  viejo (con código de las tabs ya eliminadas) que casaba al arrancar — y como el error
+  no estaba controlado, todo el código posterior en ese archivo, incluida la conexión
+  del botón "Conectar con Spotify", nunca llegaba a ejecutarse.
+- Estrategia del service worker cambiada a **network-first** (más simple, sin la
+  condición de carrera del bug anterior).
+- Las páginas detectan una versión nueva del service worker con el evento estándar
+  `controllerchange` y se recargan solas una vez (con aviso por toast).
+- **Toasts para cualquier error de JS no controlado** (`window.onerror` +
+  `unhandledrejection`), en vez de fallar en silencio y solo verse en consola.
+- ⚠️ **Nota operativa**: a partir de ahora, cada vez que cambies HTML/CSS/JS del app
+  shell, sube el número de `CACHE_NAME` en `sw.js` — si no, el navegador puede seguir
+  sirviendo versiones cacheadas viejas indefinidamente, como pasó aquí.
+
 ### v1.4.0
 - Eliminado "Minutos escuchados" (subida de historial extendido) — no aportaba al
   propósito principal de la app

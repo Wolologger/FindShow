@@ -91,6 +91,17 @@
 <script src="js/demo.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
+    var yaRecargando = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (yaRecargando) return;
+      yaRecargando = true;
+      if (typeof showToast === 'function') {
+        showToast('Nueva versión cargada, actualizando...', 'info', 1500);
+      }
+      setTimeout(function() { window.location.reload(); }, 600);
+    });
+
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('sw.js').catch(function() {});
     });
