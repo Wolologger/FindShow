@@ -1,14 +1,15 @@
 // ============================================================
 // FindShow — app.js
-// v1.4.0 — 12/08/26
+// v1.8.1 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
-// v1.4.0 (12/08/26) — Eliminado "Minutos escuchados" y las tabs; queda
-//                      un único panel de conciertos, siempre visible
-// v1.3.0 (12/08/26) — Fuera el panel de configuración con campos de API keys;
-//                      ahora se editan como constantes al principio de este archivo
-// v1.2.0 (12/08/26) — Búsqueda directa por artista/ciudad sin Spotify;
-//                      caché de resultados (20 min); Spotify pasa a opcional
+// v1.8.1 (12/08/26) — Rellenados SPOTIFY_CLIENT_ID y TICKETMASTER_API_KEY
+//                      con las claves reales (ver aviso de privacidad en README)
+// v1.8.0 (12/08/26) — Misma alternativa que con Spotify, ahora para
+//                      TICKETMASTER_API_KEY: modal + localStorage, y
+//                      la búsqueda que estaba a medias se relanza sola
+// v1.7.0 (12/08/26) — Alternativa a SPOTIFY_CLIENT_ID fijo en código: modal que
+//                      lo pide una vez y lo guarda en localStorage del navegador
 // ============================================================
 // Utilidades de almacenamiento: usa window.storage si existe
 // (entorno artifact de Claude), y cae a sessionStorage si no
@@ -52,8 +53,8 @@ var EMAILS_PERMITIDOS = [
 // Son las tuyas propias (developer.spotify.com, developer.ticketmaster.com,
 // api.setlist.fm) — ver README para cómo conseguirlas.
 // ============================================================
-var SPOTIFY_CLIENT_ID = 'TU_SPOTIFY_CLIENT_ID';
-var TICKETMASTER_API_KEY = 'TU_TICKETMASTER_API_KEY';
+var SPOTIFY_CLIENT_ID = 'c579d8501cdf4e1cb30c8c43ea4d96ca';
+var TICKETMASTER_API_KEY = 'qBuAZl47oJntRLjSnwFndmkFjHm8H0tz';
 var SETLISTFM_API_KEY = 'TU_SETLISTFM_API_KEY'; // opcional, solo para "conciertos pasados"
 var CORS_PROXY_URL = ''; // opcional, solo si setlist.fm da error de CORS — ver README
 
@@ -207,15 +208,23 @@ function base64urlencode(buffer) {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-document.getElementById('btnSpotifyLogin').addEventListener('click', async function() {
-  var clientId = SPOTIFY_CLIENT_ID;
-  var redirectUri = spotifyRedirectUri();
-  if (!clientId || clientId === 'TU_SPOTIFY_CLIENT_ID') {
-    showToast('Falta configurar SPOTIFY_CLIENT_ID en js/app.js', 'error');
-    return;
-  }
+// El Client ID se puede fijar en el código (SPOTIFY_CLIENT_ID, arriba) o, si
+// prefieres no tocar el código ni que quede en el repo público, la app lo pide
+// una vez por pantalla y lo recuerda solo en ESTE navegador (localStorage) —
+// nunca se sube a ningún sitio ni queda en el código fuente.
+function obtenerClientIdGuardado() {
+  try { return localStorage.getItem('findshow_spotify_client_id') || ''; }
+  catch (e) { return ''; }
+}
 
-  setBtnLoading(this, true);
+function guardarClientIdLocal(clientId) {
+  try { localStorage.setItem('findshow_spotify_client_id', clientId); }
+  catch (e) { /* localStorage puede fallar en modo privado; seguimos igualmente */ }
+}
+
+async function continuarLoginSpotify(clientId, btn) {
+  var redirectUri = spotifyRedirectUri();
+  setBtnLoading(btn, true);
 
   var verifier = generateRandomString(64);
   await store.set('pkce_verifier', verifier);
@@ -234,6 +243,56 @@ document.getElementById('btnSpotifyLogin').addEventListener('click', async funct
   });
 
   window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+function pedirClientIdPorModal(btn) {
+  var html =
+    '<div class="modal-header">' +
+      '<span class="modal-artist">Configuración</span>' +
+      '<span class="modal-title">Conectar con Spotify</span>' +
+    '</div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-bottom:14px;font-size:13px;line-height:1.6;">' +
+        'Pega tu <strong>Client ID</strong> de ' +
+        '<a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a>. ' +
+        'Se guarda solo en este navegador (nunca se sube a ningún sitio ni queda en el código).' +
+      '</p>' +
+      '<input type="text" id="inputClientIdModal" class="search-input" style="width:100%;box-sizing:border-box;margin-bottom:14px;" placeholder="Client ID de Spotify">' +
+      '<div class="modal-actions">' +
+        '<button class="btn" id="btnGuardarClientId">Guardar y conectar</button>' +
+      '</div>' +
+    '</div>';
+
+  openModal(html);
+
+  var input = document.getElementById('inputClientIdModal');
+  input.focus();
+
+  function confirmar() {
+    var valor = input.value.trim();
+    if (!valor) { showToast('Pega un Client ID válido', 'error'); return; }
+    guardarClientIdLocal(valor);
+    closeModal();
+    continuarLoginSpotify(valor, btn);
+  }
+
+  document.getElementById('btnGuardarClientId').addEventListener('click', confirmar);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') confirmar(); });
+}
+
+document.getElementById('btnSpotifyLogin').addEventListener('click', async function() {
+  var btn = this;
+  var clientId = SPOTIFY_CLIENT_ID;
+  if (!clientId || clientId === 'TU_SPOTIFY_CLIENT_ID') {
+    clientId = obtenerClientIdGuardado();
+  }
+
+  if (!clientId) {
+    pedirClientIdPorModal(btn);
+    return;
+  }
+
+  continuarLoginSpotify(clientId, btn);
 });
 
 async function handleSpotifyCallback() {
@@ -404,10 +463,62 @@ async function guardarCache(key, data) {
   catch (e) { /* si falla el guardado, no pasa nada, simplemente no cachea esta vez */ }
 }
 
+// El key se puede fijar en el código (TICKETMASTER_API_KEY, arriba) o, igual
+// que con Spotify, pedirla una vez por pantalla y recordarla solo en este
+// navegador (localStorage) sin tocar el código ni el repo.
+function obtenerTicketmasterApiKey() {
+  if (TICKETMASTER_API_KEY && TICKETMASTER_API_KEY !== 'TU_TICKETMASTER_API_KEY') return TICKETMASTER_API_KEY;
+  try { return localStorage.getItem('findshow_tm_api_key') || ''; }
+  catch (e) { return ''; }
+}
+
+function guardarTicketmasterApiKeyLocal(key) {
+  try { localStorage.setItem('findshow_tm_api_key', key); }
+  catch (e) { /* localStorage puede fallar en modo privado; seguimos igualmente */ }
+}
+
+function pedirTicketmasterApiKeyPorModal(reintentar) {
+  var html =
+    '<div class="modal-header">' +
+      '<span class="modal-artist">Configuración</span>' +
+      '<span class="modal-title">API Key de Ticketmaster</span>' +
+    '</div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-bottom:14px;font-size:13px;line-height:1.6;">' +
+        'Pega tu key gratuita de ' +
+        '<a href="https://developer.ticketmaster.com" target="_blank">developer.ticketmaster.com</a>. ' +
+        'Se guarda solo en este navegador (nunca se sube a ningún sitio ni queda en el código).' +
+      '</p>' +
+      '<input type="text" id="inputTmKeyModal" class="search-input" style="width:100%;box-sizing:border-box;margin-bottom:14px;" placeholder="API Key de Ticketmaster">' +
+      '<div class="modal-actions">' +
+        '<button class="btn" id="btnGuardarTmKey">Guardar y buscar</button>' +
+      '</div>' +
+    '</div>';
+
+  openModal(html);
+
+  var input = document.getElementById('inputTmKeyModal');
+  input.focus();
+
+  function confirmar() {
+    var valor = input.value.trim();
+    if (!valor) { showToast('Pega una API key válida', 'error'); return; }
+    guardarTicketmasterApiKeyLocal(valor);
+    closeModal();
+    reintentar();
+  }
+
+  document.getElementById('btnGuardarTmKey').addEventListener('click', confirmar);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') confirmar(); });
+}
+
 async function buscarTodosLosSeguidos() {
-  var apiKey = TICKETMASTER_API_KEY;
+  var apiKey = obtenerTicketmasterApiKey();
   var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
-  if (!apiKey || apiKey === 'TU_TICKETMASTER_API_KEY') { showToast('Falta configurar TICKETMASTER_API_KEY en js/app.js', 'error'); return; }
+  if (!apiKey) {
+    pedirTicketmasterApiKeyPorModal(function() { buscarTodosLosSeguidos(); });
+    return;
+  }
   if (artistasSeguidos.length === 0) { setStatus('no hay artistas cargados'); return; }
 
   var btn = document.getElementById('btnBuscarConciertos');
@@ -479,9 +590,12 @@ function ejecutarBusquedaPrincipal() {
 }
 
 async function buscarLibre(artista, ciudad) {
-  var apiKey = TICKETMASTER_API_KEY;
+  var apiKey = obtenerTicketmasterApiKey();
   var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
-  if (!apiKey || apiKey === 'TU_TICKETMASTER_API_KEY') { showToast('Falta configurar TICKETMASTER_API_KEY en js/app.js', 'error'); return; }
+  if (!apiKey) {
+    pedirTicketmasterApiKeyPorModal(function() { buscarLibre(artista, ciudad); });
+    return;
+  }
   if (!artista && !ciudad) { showToast('Escribe un artista, una ciudad, o ambos', 'info'); return; }
 
   var cacheKey = 'tm_' + artista.toLowerCase() + '|' + ciudad.toLowerCase() + '|' + (ciudad ? 'sin-radio' : radio);
