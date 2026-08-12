@@ -1,0 +1,709 @@
+/* ============================================================
+   FindShow — styles.css
+   v1.2.0 — 12/08/26
+   ------------------------------------------------------------
+   CHANGELOG (últimas 3):
+   v1.2.0 (12/08/26) — Panel de búsqueda directa; pantalla de acceso
+                        (Google Sign-In)
+   v1.1.0 (12/08/26) — Toasts, modal de detalle, conciertos pasados/setlists,
+                        responsive completo, transiciones
+   v1.0.0 (12/08/26) — Versión inicial: tickets, calendario, chips, stats
+   ============================================================ */
+
+/* Transición nativa entre páginas (Chrome/Edge modernos; el resto lo ignora sin romper nada) */
+@view-transition {
+  navigation: auto;
+}
+
+:root{
+    --ink:#0B0D10;
+    --ink-soft:#15181D;
+    --paper:#ECE9DF;
+    --paper-dim:#C9C6BB;
+    --accent:#FF3B30;
+    --accent2:#FFD23F;
+    --teal:#22A6A6;
+    --line:rgba(236,233,223,0.14);
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    animation:pageIn .25s ease both;
+  }
+  @keyframes pageIn{from{opacity:0;}to{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){
+    body{animation:none;}
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px;}
+
+  /* ---- Nav entre páginas (demo / real) ---- */
+  .page-nav{display:flex;gap:8px;margin-bottom:16px;}
+  .page-nav-link{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--paper-dim);text-decoration:none;
+    border:1px solid var(--line);padding:5px 10px;
+  }
+  .page-nav-link:hover{color:var(--paper);border-color:var(--paper-dim);}
+  .page-nav-link.active{color:var(--accent2);border-color:var(--accent2);}
+
+  /* ---- Masthead ---- */
+  header.masthead{
+    border-bottom:3px solid var(--paper);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  header.masthead .title{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(34px,7vw,58px);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    line-height:0.9;
+  }
+  header.masthead .title span{color:var(--accent);}
+  header.masthead .sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--paper-dim);
+    letter-spacing:1px;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs{display:flex;gap:2px;margin-bottom:24px;}
+  .tab-btn{
+    flex:1;
+    background:var(--ink-soft);
+    color:var(--paper-dim);
+    border:1px solid var(--line);
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:14px;
+    padding:14px 10px;
+    cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .tab-btn.active{background:var(--accent);color:var(--ink);border-color:var(--accent);}
+  .tab-btn:hover:not(.active){color:var(--paper);}
+
+  .panel{display:none;opacity:0;transform:translateY(6px);}
+  .panel.active{display:block;}
+  .panel.active.show{opacity:1;transform:translateY(0);transition:opacity .18s ease,transform .18s ease;}
+  @media (prefers-reduced-motion: reduce){
+    .panel.active.show{transition:none;}
+  }
+
+  /* ---- Config box ---- */
+  details.config{
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    margin-bottom:24px;
+    padding:14px 18px;
+  }
+  details.config summary{
+    cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--teal);
+    letter-spacing:0.5px;
+  }
+  .config-grid{display:grid;gap:10px;margin-top:14px;}
+  .field label{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--paper-dim);
+    margin-bottom:4px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .field input{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--line);
+    color:var(--paper);
+    padding:10px 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+  }
+  .field input:focus{outline:1px solid var(--accent);}
+  .hint{font-size:12px;color:var(--paper-dim);margin-top:8px;line-height:1.5;}
+  .hint a{color:var(--teal);}
+
+  /* ---- Buttons ---- */
+  .btn{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:14px;
+    padding:13px 24px;
+    background:var(--accent);
+    color:var(--ink);
+    border:none;
+    cursor:pointer;
+    position:relative;
+  }
+  .btn:hover{background:var(--accent2);}
+  .btn:disabled{background:var(--paper-dim);cursor:not-allowed;}
+  .btn.secondary{background:transparent;color:var(--paper);border:1px solid var(--paper-dim);}
+  .btn.secondary:hover{border-color:var(--paper);background:transparent;}
+
+  .btn.loading{color:transparent;pointer-events:none;}
+  .btn.loading::after{
+    content:"";position:absolute;left:50%;top:50%;
+    width:16px;height:16px;margin:-8px 0 0 -8px;
+    border:2px solid rgba(0,0,0,0.25);border-top-color:var(--ink);
+    border-radius:50%;animation:spin .6s linear infinite;
+  }
+  .btn.secondary.loading::after{border:2px solid rgba(236,233,223,0.25);border-top-color:var(--paper);}
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .spinner{
+    display:inline-block;width:12px;height:12px;
+    border:2px solid rgba(34,166,166,0.25);border-top-color:var(--teal);
+    border-radius:50%;
+    animation:spin .6s linear infinite;
+    vertical-align:middle;margin-right:8px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .btn.loading::after,.spinner{animation-duration:1.4s;}
+  }
+
+  .progress-bar{
+    height:3px;background:var(--ink-soft);margin:0 0 16px;overflow:hidden;display:none;
+  }
+  .progress-bar.active{display:block;}
+  .progress-bar-fill{height:100%;width:0%;background:var(--accent);transition:width .15s ease;}
+
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .skeleton-ticket{
+    height:88px;
+    background:linear-gradient(90deg,var(--ink-soft) 25%,rgba(236,233,223,0.05) 50%,var(--ink-soft) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.3s infinite;
+    margin-bottom:16px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .skeleton-ticket{animation-duration:2.5s;}
+  }
+
+  .status-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--teal);
+    margin:14px 0;
+    min-height:16px;
+  }
+
+  /* ---- Artist chips ---- */
+  .artist-list{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0;}
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:6px 10px;
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    cursor:pointer;
+    user-select:none;
+    transition:background .12s,color .12s,border-color .12s;
+  }
+  .chip:hover{border-color:var(--paper-dim);}
+  .chip.active{background:var(--accent);color:var(--ink);border-color:var(--accent);}
+
+  /* ---- Ticket stub cards ---- */
+  .tickets{display:flex;flex-direction:column;gap:16px;margin-top:20px;}
+  @keyframes ticketIn{from{opacity:0;}to{opacity:1;}}
+  .ticket{
+    display:grid;
+    grid-template-columns:100px 1fr;
+    background:var(--paper);
+    color:var(--ink);
+    position:relative;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    animation:ticketIn .22s ease both;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticket{animation:none;}
+  }
+  .ticket:nth-child(3n+1){transform:rotate(-0.4deg);}
+  .ticket:nth-child(3n+2){transform:rotate(0.3deg);}
+  .ticket-date{
+    background:var(--accent);
+    color:var(--ink);
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:14px 6px;
+    position:relative;
+  }
+  .ticket-date .day{font-size:30px;line-height:1;}
+  .ticket-date .month{font-size:12px;text-transform:uppercase;letter-spacing:1px;}
+  .ticket-date::after{
+    content:"";
+    position:absolute;
+    right:-1px;top:0;bottom:0;
+    width:0;
+    border-right:2px dashed var(--ink);
+    opacity:0.35;
+  }
+  .ticket-body{padding:14px 18px;}
+  .ticket-artist{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--teal);
+    background:var(--ink);
+    display:inline-block;
+    padding:2px 6px;
+    margin-bottom:6px;
+  }
+  .ticket-name{font-family:'Oswald',sans-serif;font-weight:600;font-size:19px;margin:0 0 4px;}
+  .ticket-venue{font-size:13px;color:#3a3a3a;margin:0 0 10px;}
+  .ticket-link{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink);
+    text-decoration:none;
+    border-bottom:1px solid var(--ink);
+  }
+  .ticket-dist{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);
+    background:transparent;border:1px solid var(--teal);
+    display:inline-block;padding:1px 6px;margin-left:8px;
+  }
+  .empty{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--paper-dim);
+    padding:30px 0;
+    text-align:center;
+    border:1px dashed var(--line);
+  }
+
+  .controls-row{display:flex;gap:12px;align-items:center;margin:14px 0 20px;flex-wrap:wrap;}
+  .search-input{
+    flex:1;min-width:180px;background:var(--ink-soft);border:1px solid var(--line);
+    color:var(--paper);padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;
+  }
+  .search-input:focus{outline:1px solid var(--accent);}
+  .search-input::placeholder{color:var(--paper-dim);}
+  .view-toggle{display:flex;gap:2px;}
+  .view-btn{
+    background:var(--ink-soft);color:var(--paper-dim);border:1px solid var(--line);
+    font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:12px;
+    padding:10px 16px;cursor:pointer;
+  }
+  .view-btn.active{background:var(--teal);color:var(--ink);border-color:var(--teal);}
+
+  .select-control{
+    background:var(--ink-soft);color:var(--paper);border:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:12px;padding:9px 10px;cursor:pointer;
+  }
+  .select-control:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .group-header{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;
+    font-size:15px;color:var(--accent2);border-bottom:1px solid var(--line);
+    padding:18px 0 6px;margin-top:6px;
+  }
+  .group-header:first-child{margin-top:0;padding-top:0;}
+
+  .calendar-month{margin-bottom:28px;}
+  .calendar-month h3{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;
+    font-size:16px;color:var(--paper);border-bottom:1px solid var(--line);
+    padding-bottom:6px;margin:0 0 10px;
+  }
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .calendar-dow{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--paper-dim);
+    text-align:center;text-transform:uppercase;padding:4px 0;
+  }
+  .calendar-day{
+    background:var(--ink-soft);border:1px solid var(--line);min-height:60px;
+    padding:4px;font-family:'JetBrains Mono',monospace;
+  }
+  .calendar-day.empty{background:transparent;border:none;}
+  .calendar-day.has-event{border-color:var(--accent);background:rgba(255,59,48,0.08);}
+  .calendar-day .daynum{font-size:11px;color:var(--paper-dim);}
+  .calendar-day .ev-tag{
+    display:block;font-size:9px;background:var(--accent);color:var(--ink);
+    padding:1px 3px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;text-decoration:none;
+  }
+  .calendar-day .ev-tag:hover{background:var(--accent2);}
+  @media (max-width:600px){
+    .calendar-day{min-height:44px;}
+    .calendar-dow{font-size:9px;}
+  }
+
+  /* ---- Stats tab ---- */
+  .upload-zone{
+    border:2px dashed var(--line);
+    padding:36px 20px;
+    text-align:center;
+    margin-bottom:24px;
+  }
+  .upload-zone input{display:none;}
+  .upload-label{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--teal);
+    cursor:pointer;
+    font-size:15px;
+  }
+  .big-number{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(48px,10vw,86px);
+    line-height:1;
+    color:var(--accent2);
+  }
+  .big-number small{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--paper-dim);
+    letter-spacing:1px;
+    font-weight:400;
+    margin-top:6px;
+  }
+  .bar-row{display:grid;grid-template-columns:140px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;animation:ticketIn .2s ease both;}
+  @media (prefers-reduced-motion: reduce){
+    .bar-row{animation:none;}
+  }
+  .bar-name{font-family:'JetBrains Mono',monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bar-track{background:var(--ink-soft);height:18px;position:relative;}
+  .bar-fill{background:var(--teal);height:100%;}
+  .bar-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--paper-dim);text-align:right;}
+
+  .callout{
+    background:var(--ink-soft);
+    border-left:3px solid var(--accent2);
+    padding:14px 18px;
+    font-size:13px;
+    line-height:1.6;
+    color:var(--paper-dim);
+    margin-bottom:24px;
+  }
+  .callout a{color:var(--teal);}
+  .callout strong{color:var(--paper);}
+
+  /* ============================================================
+     RESPONSIVE — móvil
+     ============================================================ */
+  @media (max-width: 720px){
+    .wrap{padding:24px 16px 60px;}
+
+    header.masthead{flex-direction:column;align-items:flex-start;gap:4px;padding-bottom:14px;margin-bottom:20px;}
+
+    .tabs{gap:2px;}
+    .tab-btn{font-size:12px;padding:12px 6px;letter-spacing:0.5px;}
+
+    .config-grid{grid-template-columns:1fr;}
+
+    .controls-row{flex-direction:column;align-items:stretch;gap:8px;margin:12px 0 16px;}
+    .search-input{width:100%;}
+    .select-control{width:100%;}
+    .view-toggle{width:100%;}
+    .view-btn{flex:1;padding:11px 8px;font-size:11px;}
+
+    .radio-filter{flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;}
+    .radio-filter label{white-space:normal;}
+    .radio-val{text-align:left;}
+
+    .artist-list{gap:6px;}
+    .chip{font-size:11px;padding:7px 9px;}
+
+    .ticket{grid-template-columns:76px 1fr;}
+    .ticket-date .day{font-size:24px;}
+    .ticket-date .month{font-size:10px;}
+    .ticket-name{font-size:16px;}
+    .ticket-venue{font-size:12px;}
+    .ticket-body{padding:12px 14px;}
+    .ticket-dist{display:block;margin:4px 0 0;width:fit-content;}
+
+    .calendar-day{min-height:42px;padding:3px;}
+    .calendar-day .daynum{font-size:10px;}
+    .calendar-day .ev-tag{font-size:8px;padding:1px 2px;}
+    .calendar-dow{font-size:9px;padding:2px 0;}
+    .calendar-month h3{font-size:14px;}
+
+    .big-number{font-size:15vw;}
+
+    .demo-banner{font-size:10px;padding:8px 10px;}
+  }
+
+  @media (max-width: 400px){
+    .ticket{grid-template-columns:64px 1fr;}
+    .ticket-date .day{font-size:20px;}
+    .ticket-name{font-size:15px;}
+    .bar-row{grid-template-columns:100px 1fr 50px;}
+  }
+
+  /* Zona táctil mínima en móvil para chips/botones */
+  @media (hover: none) and (pointer: coarse){
+    .chip, .view-btn, .tab-btn, .btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
+    .search-input, .select-control{min-height:40px;}
+  }
+
+  /* ---- Footer: atribución de fuentes de datos y privacidad ---- */
+  .app-footer{
+    margin-top:48px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    line-height:1.7;
+    color:var(--paper-dim);
+  }
+  .app-footer p{margin:0 0 8px;}
+  .app-footer a{color:var(--teal);text-decoration:none;border-bottom:1px solid transparent;}
+  .app-footer a:hover{border-bottom-color:var(--teal);}
+
+  /* ============================================================
+     TOASTS
+     ============================================================ */
+  .toast-container{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    z-index:1000;
+    width:min(92vw,420px);
+    pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    border-left:3px solid var(--teal);
+    color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    line-height:1.5;
+    padding:12px 12px 12px 14px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    animation:toastIn .2s ease both;
+  }
+  .toast.success{border-left-color:var(--teal);}
+  .toast.error{border-left-color:var(--accent);}
+  .toast.info{border-left-color:var(--accent2);}
+  .toast.leaving{animation:toastOut .16s ease forwards;}
+  .toast-msg{flex:1;}
+  .toast-close{
+    background:none;border:none;color:var(--paper-dim);
+    font-size:15px;line-height:1;cursor:pointer;padding:0;
+  }
+  .toast-close:hover{color:var(--paper);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(6px);}}
+  @media (prefers-reduced-motion: reduce){
+    .toast{animation:none;}
+  }
+  @media (max-width:600px){
+    .toast-container{bottom:12px;width:94vw;}
+  }
+
+  /* ============================================================
+     MODAL DE DETALLE DE CONCIERTO
+     ============================================================ */
+  .ticket{cursor:pointer;}
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.65);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    z-index:1100;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease;
+  }
+  .modal-overlay.open{opacity:1;pointer-events:auto;}
+  .modal-card{
+    background:var(--paper);
+    color:var(--ink);
+    width:100%;
+    max-width:440px;
+    max-height:85vh;
+    overflow-y:auto;
+    position:relative;
+    box-shadow:0 24px 70px rgba(0,0,0,0.55);
+    transform:translateY(14px) scale(0.98);
+    transition:transform .18s ease;
+  }
+  .modal-overlay.open .modal-card{transform:translateY(0) scale(1);}
+  .modal-close{
+    position:absolute;top:12px;right:14px;
+    background:rgba(11,13,16,0.15);border:none;
+    width:28px;height:28px;
+    font-size:18px;line-height:1;color:var(--ink);
+    cursor:pointer;
+    z-index:2;
+  }
+  .modal-close:hover{background:rgba(11,13,16,0.3);}
+  .modal-header{
+    background:var(--accent);color:var(--ink);
+    padding:20px 44px 18px 20px;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .modal-artist{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    text-transform:uppercase;letter-spacing:1px;
+  }
+  .modal-title{
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:21px;line-height:1.15;
+  }
+  .modal-body{padding:20px;}
+  .modal-row{display:flex;gap:12px;margin-bottom:16px;font-size:13px;}
+  .modal-row .label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    text-transform:uppercase;letter-spacing:0.5px;color:#6b6b6b;
+    min-width:66px;flex-shrink:0;padding-top:1px;
+  }
+  .modal-row .value{font-family:'Inter',sans-serif;line-height:1.5;}
+  .modal-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .modal-actions .btn{padding:12px 18px;font-size:13px;}
+  .modal-actions .btn.secondary{color:var(--ink);border-color:var(--ink);}
+  .modal-actions .btn.secondary:hover{background:rgba(11,13,16,0.08);border-color:var(--ink);}
+  @media (max-width:480px){
+    .modal-title{font-size:18px;}
+    .modal-actions{flex-direction:column;}
+    .modal-actions .btn{width:100%;}
+  }
+
+  /* ============================================================
+     CONCIERTOS PASADOS / SETLISTS
+     ============================================================ */
+  .past-toggle-row{display:flex;gap:10px;align-items:center;margin:0 0 16px;flex-wrap:wrap;}
+
+  .ticket.past{filter:grayscale(0.55);opacity:0.9;}
+  .ticket.past .ticket-date{background:var(--paper-dim);}
+
+  .setlist-toggle{
+    display:inline-block;margin-top:4px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--ink);text-decoration:none;border-bottom:1px dashed var(--ink);
+    cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
+    padding:0;
+  }
+  .setlist-songs{
+    list-style:none;margin:10px 0 0;padding:10px 0 0;
+    border-top:1px dashed rgba(11,13,16,0.2);
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    line-height:1.9;color:#333;
+  }
+  .setlist-songs li{position:relative;padding-left:16px;}
+  .setlist-songs li::before{content:"♪";position:absolute;left:0;color:var(--accent);}
+  .setlist-empty{opacity:0.5;font-size:11px;font-family:'JetBrains Mono',monospace;}
+
+  .modal-songs{
+    list-style:none;margin:0;padding:0;
+    font-family:'JetBrains Mono',monospace;font-size:13px;line-height:2;
+  }
+  .modal-songs li{position:relative;padding-left:18px;}
+  .modal-songs li::before{content:"♪";position:absolute;left:0;color:var(--accent);}
+  .modal-songs .encore-divider{
+    margin:10px 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;
+    color:#999;padding-left:0;
+  }
+  .modal-songs .encore-divider::before{content:none;}
+
+  .cors-note{
+    background:var(--ink-soft);border-left:3px solid var(--accent);
+    padding:12px 14px;font-size:12px;line-height:1.6;color:var(--paper-dim);
+    margin-bottom:14px;
+  }
+  .cors-note a{color:var(--teal);}
+
+  @media (max-width:640px){
+    .past-toggle-row{flex-direction:column;align-items:stretch;}
+    .past-toggle-row .btn, .past-toggle-row select{width:100%;}
+  }
+
+  /* ============================================================
+     PANTALLA DE ACCESO (Google Sign-In)
+     ============================================================ */
+  .access-gate{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:var(--ink);
+    z-index:2000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .access-gate-card{
+    max-width:380px;
+    width:100%;
+    text-align:center;
+  }
+  .access-gate-card .title{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    line-height:0.9;
+    color:var(--paper);
+  }
+  .access-gate-card .title span{color:var(--accent);}
+  .access-gate-msg{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    margin:20px 0 28px;
+  }
+  #googleSignInBtn{
+    display:flex;
+    justify-content:center;
+    min-height:44px;
+  }
+  .gate-logout{
+    background:none;border:none;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--paper-dim);text-decoration:none;
+    border-bottom:1px dashed var(--paper-dim);
+    cursor:pointer;padding:0;
+  }
+  .gate-logout:hover{color:var(--paper);border-color:var(--paper);}
+
+  /* ============================================================
+     BÚSQUEDA DIRECTA (artista / ciudad, sin necesitar Spotify)
+     ============================================================ */
+  .search-panel{
+    background:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:18px;
+    margin-bottom:6px;
+  }
+  .search-fields{display:flex;gap:10px;flex-wrap:wrap;}
+  .search-fields .search-input{flex:1;min-width:160px;}
+  .search-fields .btn{flex-shrink:0;}
+  @media (max-width:640px){
+    .search-panel{padding:14px;}
+    .search-fields{flex-direction:column;}
+    .search-fields .btn{width:100%;}
+  }
