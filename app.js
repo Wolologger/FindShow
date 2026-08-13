@@ -1,16 +1,16 @@
 // ============================================================
 // FindShow — app.js
-// v1.9.0 — 12/08/26
+// v1.10.0 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
+// v1.10.0 (12/08/26) — Sesión de Spotify persistida en localStorage (access +
+//                       refresh token): se restaura sola al recargar, se
+//                       renueva en silencio al caducar, y hay botón "Cerrar sesión"
 // v1.9.0 (12/08/26) — Ronda de feedback real de móvil: quitado el botón
-//                      bulk (no aportaba), indicador persistente de
-//                      "conectado con Spotify", chips agrupados/colapsados,
-//                      conciertos pasados comentado temporalmente
+//                      bulk, indicador de "conectado con Spotify",
+//                      chips agrupados/colapsados, setlist comentado
 // v1.8.1 (12/08/26) — Rellenados SPOTIFY_CLIENT_ID y TICKETMASTER_API_KEY
 //                      con las claves reales
-// v1.8.0 (12/08/26) — Misma alternativa que con Spotify, ahora para
-//                      TICKETMASTER_API_KEY: modal + localStorage
 // ============================================================
 // Utilidades de almacenamiento: usa window.storage si existe
 // (entorno artifact de Claude), y cae a sessionStorage si no
@@ -232,6 +232,103 @@ function guardarClientIdLocal(clientId) {
   catch (e) { /* localStorage puede fallar en modo privado; seguimos igualmente */ }
 }
 
+// ---- Sesión de Spotify guardada en localStorage (access + refresh token) ----
+// Así no hace falta reconectar cada vez que recargas la página. El access
+// token dura ~1h; guardamos también el refresh token para renovarlo en
+// silencio cuando caduque, sin que el usuario tenga que volver a autorizar.
+var SPOTIFY_SESSION_KEY = 'findshow_spotify_session';
+
+function guardarSesionSpotify(accessToken, refreshToken, expiresInSeconds) {
+  try {
+    var sesion = {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: Date.now() + (expiresInSeconds || 3600) * 1000
+    };
+    localStorage.setItem(SPOTIFY_SESSION_KEY, JSON.stringify(sesion));
+  } catch (e) { /* localStorage puede fallar en modo privado; seguimos igualmente */ }
+}
+
+function leerSesionSpotify() {
+  try {
+    var raw = localStorage.getItem(SPOTIFY_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function borrarSesionSpotify() {
+  try { localStorage.removeItem(SPOTIFY_SESSION_KEY); }
+  catch (e) { /* nada que hacer si falla */ }
+}
+
+async function refrescarTokenSpotify(sesion, clientId) {
+  var body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: sesion.refresh_token,
+    client_id: clientId
+  });
+
+  try {
+    var resp = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+    if (!resp.ok) return null;
+    var data = await resp.json();
+    // Spotify no siempre devuelve un refresh_token nuevo; si no, reutiliza el que ya teníamos
+    guardarSesionSpotify(data.access_token, data.refresh_token || sesion.refresh_token, data.expires_in);
+    return data.access_token;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function intentarRestaurarSesionSpotify() {
+  // Si venimos de vuelta de Spotify con ?code=, handleSpotifyCallback() ya se
+  // encarga de establecer una sesión nueva — no interferir aquí.
+  if (new URLSearchParams(window.location.search).get('code')) return;
+
+  var sesion = leerSesionSpotify();
+  if (!sesion) return;
+
+  var clientId = SPOTIFY_CLIENT_ID;
+  if (!clientId || clientId === 'TU_SPOTIFY_CLIENT_ID') clientId = obtenerClientIdGuardado();
+  if (!clientId) return;
+
+  var margenMs = 60 * 1000; // renueva 1 minuto antes de que caduque, por si acaso
+  if (Date.now() < sesion.expires_at - margenMs) {
+    spotifyToken = sesion.access_token;
+    setStatus('sesión de Spotify restaurada', true);
+    await cargarArtistasSeguidos();
+    return;
+  }
+
+  // Caducado (o a punto): intenta renovar en silencio, sin pedirle nada al usuario
+  var nuevoToken = await refrescarTokenSpotify(sesion, clientId);
+  if (nuevoToken) {
+    spotifyToken = nuevoToken;
+    await cargarArtistasSeguidos();
+  } else {
+    borrarSesionSpotify(); // el refresh token también caducó o fue revocado; vuelve a "Conectar con Spotify"
+  }
+}
+
+function cerrarSesionSpotify() {
+  borrarSesionSpotify();
+  spotifyToken = null;
+  artistasSeguidos = [];
+  var elEstado = document.getElementById('spotifyStatus');
+  if (elEstado) elEstado.style.display = 'none';
+  var elBtnLogin = document.getElementById('btnSpotifyLogin');
+  if (elBtnLogin) elBtnLogin.style.display = 'inline-block';
+  var elLista = document.getElementById('artistList');
+  if (elLista) elLista.innerHTML = '';
+  var elBtnMas = document.getElementById('btnMasArtistas');
+  if (elBtnMas) elBtnMas.style.display = 'none';
+  showToast('Sesión de Spotify cerrada en este navegador', 'info');
+}
+
 async function continuarLoginSpotify(clientId, btn) {
   var redirectUri = spotifyRedirectUri();
   setBtnLoading(btn, true);
@@ -334,6 +431,7 @@ async function handleSpotifyCallback() {
   if (!resp.ok) { setStatus('error autenticando con spotify'); showToast('No se pudo autenticar con Spotify. Revisa el Client ID y el Redirect URI.', 'error'); return; }
   var data = await resp.json();
   spotifyToken = data.access_token;
+  guardarSesionSpotify(data.access_token, data.refresh_token, data.expires_in);
 
   // limpia el ?code= de la url
   window.history.replaceState({}, document.title, window.location.pathname);
@@ -400,6 +498,13 @@ async function cargarArtistasSeguidos() {
 
   while (url) {
     var resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + spotifyToken } });
+    if (resp.status === 401) {
+      borrarSesionSpotify();
+      spotifyToken = null;
+      setStatus('la sesión de Spotify caducó, conecta de nuevo');
+      showToast('Tu sesión de Spotify caducó — pulsa "Conectar con Spotify" otra vez.', 'info');
+      return;
+    }
     if (!resp.ok) { setStatus('error leyendo artistas seguidos'); showToast('No se pudieron leer tus artistas seguidos de Spotify.', 'error'); return; }
     var data = await resp.json();
     data.artists.items.forEach(function(a) { artistasSeguidos.push(a.name); });
@@ -1155,3 +1260,9 @@ function mostrarDetalleSetlist(item, canciones) {
 
 // Al cargar la página, comprueba si venimos de vuelta del login de Spotify
 handleSpotifyCallback();
+intentarRestaurarSesionSpotify();
+
+var elBtnCerrarSesionSpotify = document.getElementById('btnCerrarSesionSpotify');
+if (elBtnCerrarSesionSpotify) {
+  elBtnCerrarSesionSpotify.addEventListener('click', cerrarSesionSpotify);
+}

@@ -74,7 +74,8 @@
   <div style="margin-top:16px;">
     <div class="spotify-status" id="spotifyStatus" style="display:none;">
       <span class="spotify-status-dot"></span>
-      Conectado con Spotify — <span id="spotifyStatusCount">0</span> artistas seguidos
+      <span>Conectado con Spotify — <span id="spotifyStatusCount">0</span> artistas seguidos</span>
+      <button class="spotify-status-logout" id="btnCerrarSesionSpotify" type="button">Cerrar sesión</button>
     </div>
     <button class="btn secondary" id="btnSpotifyLogin">Conectar con Spotify</button>
     <p class="hint" style="margin-top:10px;">Opcional — añade tus artistas seguidos como accesos rápidos de búsqueda.</p>
@@ -131,12 +132,13 @@
     </p>
     <p>
       Privacidad: esta app no tiene servidor. Todo el procesamiento ocurre en tu navegador.
-      El token de Spotify vive solo en tu sesión y no se envía a terceros salvo a
-      Spotify/Ticketmaster/setlist.fm para hacer las consultas correspondientes. No se usan
-      cookies de seguimiento ni analítica.
+      El token de Spotify se guarda en el <code>localStorage</code> de este navegador (para no
+      tener que reconectar cada vez) y no se envía a terceros salvo a Spotify/Ticketmaster/setlist.fm
+      para hacer las consultas correspondientes. Puedes borrarlo en cualquier momento con
+      "Cerrar sesión". No se usan cookies de seguimiento ni analítica.
     </p>
     <p><button class="gate-logout" id="btnCerrarSesionGate">Cerrar sesión de Google</button></p>
-    <p class="version-tag">FindShow v1.9.0</p>
+    <p class="version-tag">FindShow v1.10.0</p>
   </footer>
 
 </div>

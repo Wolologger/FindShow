@@ -243,6 +243,20 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
 
+### v1.10.0 — sesión de Spotify persistida
+- El token de acceso y el de refresco se guardan en `localStorage` tras conectar.
+  Al recargar la página (o volver otro día), la sesión se restaura sola sin
+  tener que pulsar "Conectar con Spotify" otra vez.
+- Cuando el access token caduca (~1h), se renueva **en silencio** con el
+  refresh token, sin interrumpir al usuario.
+- Si el refresh token también caducó o fue revocado, vuelve a mostrarse
+  limpiamente el botón de conectar, sin dejarlo colgado.
+- Nuevo botón **"Cerrar sesión"** junto al indicador de "Conectado con
+  Spotify" — borra la sesión guardada y vuelve al estado inicial.
+- `cargarArtistasSeguidos()` ahora distingue un 401 (sesión revocada) de
+  otros errores, y limpia la sesión guardada en ese caso en vez de repetir
+  el error indefinidamente.
+
 ### v1.9.0 — ronda de feedback real de móvil
 - **Bug de responsive corregido**: la vista Calendario podía desbordarse
   horizontalmente en pantallas estrechas — fallo clásico de CSS Grid
