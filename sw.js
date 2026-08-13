@@ -1,13 +1,13 @@
 // ============================================================
 // FindShow — service worker mínimo
-// v1.8.3 — 12/08/26
+// v1.9.0 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
+// v1.9.0 (12/08/26) — Bump por ronda de feedback móvil (ver app.js/index.html)
 // v1.8.3 (12/08/26) — Bump de prueba: para confirmar en el footer si el
 //                      push con la limpieza de duplicados llegó de verdad
 // v1.8.2 (12/08/26) — Bump por disciplina: index.html cambió (quitado id
 //                      controlsRow sin uso) y no se había subido la versión
-// v1.8.1 (12/08/26) — Bump por claves reales rellenadas en app.js
 // ============================================================
 // Solo cachea el "app shell" (HTML/CSS/JS/iconos propios) para que
 // la PWA sea instalable y arranque offline. Las llamadas a Spotify,
@@ -19,7 +19,7 @@
 // versiones viejas cacheadas indefinidamente.
 // ============================================================
 
-var CACHE_NAME = 'findshow-shell-v1.8.3';
+var CACHE_NAME = 'findshow-shell-v1.9.0';
 
 var APP_SHELL = [
   './',

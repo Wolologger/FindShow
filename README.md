@@ -243,6 +243,33 @@ Google Fonts (Oswald / JetBrains Mono / Inter).
 
 ## Changelog
 
+### v1.9.0 — ronda de feedback real de móvil
+- **Bug de responsive corregido**: la vista Calendario podía desbordarse
+  horizontalmente en pantallas estrechas — fallo clásico de CSS Grid
+  (`1fr` no se encoge por debajo del contenido salvo que se indique
+  explícitamente `minmax(0,1fr)` + `min-width:0`). Añadido también un
+  cortafuegos general (`overflow-x:hidden` en el body) por seguridad.
+- **Selector de distancia**: pasa de un campo numérico plano a un slider
+  con el valor en vivo ("150 km"), igual que ya tenía la demo.
+- **Indicador de "Conectado con Spotify"**: ahora es persistente (una franja
+  con el número de artistas), no solo un toast que desaparece a los segundos.
+- **Chips de artistas agrupados y colapsados**: se ordenan alfabéticamente y
+  se muestran solo los primeros 16 por defecto, con un botón "Ver todos los
+  artistas (N)" — antes, con muchos artistas seguidos, la lista de chips
+  "se salía de madre" (llegaba a decenas sin ningún orden ni límite).
+- **Quitado el botón "Buscar todos mis artistas seguidos"**: no aportaba
+  valor suficiente para el coste de tener que pulsarlo cada vez; la
+  búsqueda por artista/ciudad y los chips individuales ya cubren el caso de uso.
+- **Conciertos pasados (setlist.fm) comentado temporalmente**: el HTML queda
+  comentado (no eliminado) y el JS protegido con comprobaciones de
+  existencia, para poder reactivarlo sin reescribir nada cuando se retome.
+
+### v1.8.3
+- Bump de prueba para diagnosticar un despliegue que no se veía reflejado en
+  GitHub Pages/repo (comprobar la versión visible en el footer confirma si un
+  `git push` concreto llegó de verdad, sin depender de herramientas externas
+  con caché poco fiable)
+
 ### v1.8.2
 - Bump de versión "por disciplina": el commit anterior (quitar `controlsRow`) tocó
   `index.html` sin subir `CACHE_NAME`, rompiendo la regla que dice este mismo README.
