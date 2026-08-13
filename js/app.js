@@ -1,15 +1,16 @@
 // ============================================================
 // FindShow — app.js
-// v1.8.1 — 12/08/26
+// v1.9.0 — 12/08/26
 // ------------------------------------------------------------
 // CHANGELOG (últimas 3):
+// v1.9.0 (12/08/26) — Ronda de feedback real de móvil: quitado el botón
+//                      bulk (no aportaba), indicador persistente de
+//                      "conectado con Spotify", chips agrupados/colapsados,
+//                      conciertos pasados comentado temporalmente
 // v1.8.1 (12/08/26) — Rellenados SPOTIFY_CLIENT_ID y TICKETMASTER_API_KEY
-//                      con las claves reales (ver aviso de privacidad en README)
+//                      con las claves reales
 // v1.8.0 (12/08/26) — Misma alternativa que con Spotify, ahora para
-//                      TICKETMASTER_API_KEY: modal + localStorage, y
-//                      la búsqueda que estaba a medias se relanza sola
-// v1.7.0 (12/08/26) — Alternativa a SPOTIFY_CLIENT_ID fijo en código: modal que
-//                      lo pide una vez y lo guarda en localStorage del navegador
+//                      TICKETMASTER_API_KEY: modal + localStorage
 // ============================================================
 // Utilidades de almacenamiento: usa window.storage si existe
 // (entorno artifact de Claude), y cae a sessionStorage si no
@@ -148,6 +149,15 @@ if (btnCerrarSesionGate) {
 }
 
 esperarGoogleSDK();
+
+// ---- Slider de radio: valor en vivo ----
+var radioKmInput = document.getElementById('radioKm');
+var radioKmValSpan = document.getElementById('radioKmVal');
+if (radioKmInput && radioKmValSpan) {
+  radioKmInput.addEventListener('input', function() {
+    radioKmValSpan.textContent = radioKmInput.value + ' km';
+  });
+}
 
 // ============================================================
 // TUTORIAL — modal "¿Cómo funciona?"
@@ -328,7 +338,6 @@ async function handleSpotifyCallback() {
   // limpia el ?code= de la url
   window.history.replaceState({}, document.title, window.location.pathname);
 
-  document.getElementById('btnBuscarConciertos').style.display = 'inline-block';
   setStatus('conectado. cargando artistas seguidos...', true);
   await cargarArtistasSeguidos();
 }
@@ -399,13 +408,30 @@ async function cargarArtistasSeguidos() {
 
   setStatus(artistasSeguidos.length + ' artistas seguidos cargados');
   showToast('Conectado con Spotify · ' + artistasSeguidos.length + ' artistas seguidos', 'success');
+
+  var elEstado = document.getElementById('spotifyStatus');
+  var elEstadoCount = document.getElementById('spotifyStatusCount');
+  if (elEstado && elEstadoCount) {
+    elEstadoCount.textContent = artistasSeguidos.length;
+    elEstado.style.display = 'flex';
+  }
+  var elBtnLogin = document.getElementById('btnSpotifyLogin');
+  if (elBtnLogin) elBtnLogin.style.display = 'none';
+
   renderArtistList();
 }
+
+var ARTISTAS_VISIBLES_INICIAL = 16;
+var mostrandoTodosArtistas = false;
 
 function renderArtistList() {
   var container = document.getElementById('artistList');
   container.innerHTML = '';
-  artistasSeguidos.forEach(function(name) {
+
+  var ordenados = artistasSeguidos.slice().sort(function(a, b) { return a.localeCompare(b, 'es'); });
+  var visibles = mostrandoTodosArtistas ? ordenados : ordenados.slice(0, ARTISTAS_VISIBLES_INICIAL);
+
+  visibles.forEach(function(name) {
     var chip = document.createElement('div');
     chip.className = 'chip';
     chip.textContent = name;
@@ -413,19 +439,27 @@ function renderArtistList() {
       document.querySelectorAll('#artistList .chip').forEach(function(c) { c.classList.remove('active'); });
       chip.classList.add('active');
       document.getElementById('artistaQuery').value = name;
-
-      if (typeof modoPasados !== 'undefined' && modoPasados) {
-        buscarSetlists();
-      } else {
-        buscarLibre(name, document.getElementById('ciudadQuery').value.trim());
-      }
+      buscarLibre(name, document.getElementById('ciudadQuery').value.trim());
     });
     container.appendChild(chip);
   });
+
+  var btnMas = document.getElementById('btnMasArtistas');
+  if (ordenados.length > ARTISTAS_VISIBLES_INICIAL) {
+    btnMas.style.display = 'inline-block';
+    btnMas.textContent = mostrandoTodosArtistas ? 'Ver menos' : 'Ver todos los artistas (' + ordenados.length + ')';
+  } else {
+    btnMas.style.display = 'none';
+  }
 }
 
-// ---- Ticketmaster: búsqueda bulk de todos los artistas seguidos (opcional, requiere Spotify) ----
-document.getElementById('btnBuscarConciertos').addEventListener('click', buscarTodosLosSeguidos);
+document.getElementById('btnMasArtistas').addEventListener('click', function() {
+  mostrandoTodosArtistas = !mostrandoTodosArtistas;
+  renderArtistList();
+});
+
+// (búsqueda bulk de todos los artistas seguidos eliminada — no aportaba, usa
+// los chips individuales o la búsqueda por artista/ciudad de arriba)
 
 var ultimosResultados = [];
 var currentView = 'list';
@@ -510,63 +544,6 @@ function pedirTicketmasterApiKeyPorModal(reintentar) {
 
   document.getElementById('btnGuardarTmKey').addEventListener('click', confirmar);
   input.addEventListener('keydown', function(e) { if (e.key === 'Enter') confirmar(); });
-}
-
-async function buscarTodosLosSeguidos() {
-  var apiKey = obtenerTicketmasterApiKey();
-  var radio = parseInt(document.getElementById('radioKm').value, 10) || 150;
-  if (!apiKey) {
-    pedirTicketmasterApiKeyPorModal(function() { buscarTodosLosSeguidos(); });
-    return;
-  }
-  if (artistasSeguidos.length === 0) { setStatus('no hay artistas cargados'); return; }
-
-  var btn = document.getElementById('btnBuscarConciertos');
-  setBtnLoading(btn, true);
-  mostrarSkeletons(Math.min(4, artistasSeguidos.length));
-  mostrarProgreso(0);
-  setStatus('buscando conciertos... (0/' + artistasSeguidos.length + ')', true);
-
-  var todosLosEventos = [];
-  var completados = 0;
-
-  await enParalelo(artistasSeguidos, 5, async function(artista) {
-    var url = 'https://app.ticketmaster.com/discovery/v2/events.json'
-      + '?keyword=' + encodeURIComponent(artista)
-      + '&countryCode=ES&classificationName=music&sort=date,asc&size=10&apikey=' + apiKey;
-
-    try {
-      var resp = await fetch(url);
-      if (resp.ok) {
-        var data = await resp.json();
-        if (data._embedded && data._embedded.events) {
-          data._embedded.events.forEach(function(ev) {
-            var venue = ev._embedded && ev._embedded.venues && ev._embedded.venues[0];
-            var loc = venue && venue.location;
-            if (!loc || !loc.latitude || !loc.longitude) return;
-            var dist = distanciaKm(CENTRO_LAT, CENTRO_LON, parseFloat(loc.latitude), parseFloat(loc.longitude));
-            if (dist <= radio) {
-              todosLosEventos.push({ artista: artista, ev: ev, venue: venue, dist: dist });
-            }
-          });
-        }
-      }
-    } catch (e) { /* seguimos con el siguiente artista, un fallo no bloquea el resto */ }
-
-    completados++;
-    setStatus('buscando conciertos... (' + completados + '/' + artistasSeguidos.length + ')', true);
-  });
-
-  mostrarProgreso(null);
-  setBtnLoading(btn, false);
-  ultimosResultados = todosLosEventos;
-  renderResultados();
-
-  if (todosLosEventos.length > 0) {
-    showToast(todosLosEventos.length + (todosLosEventos.length === 1 ? ' concierto encontrado' : ' conciertos encontrados') + ' dentro de ' + radio + ' km de Cantabria', 'success');
-  } else {
-    showToast('Ningún concierto encontrado en ese radio. Prueba a ampliarlo.', 'info');
-  }
 }
 
 // ---- Búsqueda directa por artista y/o ciudad (NO requiere Spotify) ----
@@ -940,19 +917,24 @@ function refrescarConciertos() {
 var modoPasados = false;
 var ultimosSetlists = [];
 
-document.getElementById('btnTogglePasados').addEventListener('click', function() {
-  modoPasados = !modoPasados;
-  actualizarModoPasados();
-});
+var elBtnTogglePasados = document.getElementById('btnTogglePasados');
+if (elBtnTogglePasados) {
+  elBtnTogglePasados.addEventListener('click', function() {
+    modoPasados = !modoPasados;
+    actualizarModoPasados();
+  });
+}
 
 function actualizarModoPasados() {
   var btn = document.getElementById('btnTogglePasados');
-  btn.textContent = modoPasados ? 'Ver próximos conciertos' : 'Ver conciertos pasados';
-  document.getElementById('filtroAnio').style.display = modoPasados ? 'inline-block' : 'none';
+  if (btn) btn.textContent = modoPasados ? 'Ver próximos conciertos' : 'Ver conciertos pasados';
+  var elFiltroAnio = document.getElementById('filtroAnio');
+  if (elFiltroAnio) elFiltroAnio.style.display = modoPasados ? 'inline-block' : 'none';
   document.getElementById('ordenarPor').style.display = modoPasados ? 'none' : '';
   document.getElementById('agruparPor').style.display = modoPasados ? 'none' : '';
   document.getElementById('viewToggleRow').style.display = modoPasados ? 'none' : 'flex';
-  document.getElementById('corsNote').style.display = 'none';
+  var elCorsNote = document.getElementById('corsNote');
+  if (elCorsNote) elCorsNote.style.display = 'none';
 
   if (modoPasados) {
     buscarSetlists();
@@ -961,7 +943,10 @@ function actualizarModoPasados() {
   }
 }
 
-document.getElementById('filtroAnio').addEventListener('change', renderSetlists);
+var elFiltroAnioChange = document.getElementById('filtroAnio');
+if (elFiltroAnioChange) {
+  elFiltroAnioChange.addEventListener('change', renderSetlists);
+}
 
 function anioDeSetlist(fechaDDMMYYYY) { return fechaDDMMYYYY.slice(6, 10); }
 
